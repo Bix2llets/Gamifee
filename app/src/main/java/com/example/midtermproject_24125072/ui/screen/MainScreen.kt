@@ -42,7 +42,7 @@ fun AppMainScreen() {
                 composable("home") {
                     HomeScreen(navController)
                 }
-    //            composable("cart")      { CartScreen(navController) }
+                composable("cart")      { CartScreen(navController) }
                 composable("orders")    { OrdersScreen(navController) }
                 composable("rewards")   { RewardsScreen(navController) }
     //            composable("profile")   { ProfileScreen(navController) }

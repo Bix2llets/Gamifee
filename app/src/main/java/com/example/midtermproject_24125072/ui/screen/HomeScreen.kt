@@ -57,13 +57,15 @@ fun HomeScreen(navController: NavHostController) {
             .padding(all = 32.dp)
     ) {
         HomeHeader(
-            onCartClick = { },
+            onCartClick = { navController.navigate("cart")},
             onAccountClick = { /* navigate to profile later */ }
         )
 
+        Spacer(modifier = Modifier.height(8.dp))
 
-        LoyaltyCard(4, 8, modifier = Modifier.padding(16.dp))
+        LoyaltyCard(4, 8, modifier = Modifier.padding(8.dp))
 
+        Spacer(modifier = Modifier.height(16.dp))
 
         CoffeeGrid(
             onCoffeeClick = { coffeeId ->
