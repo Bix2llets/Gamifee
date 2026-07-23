@@ -57,7 +57,9 @@ fun OrderSuccessScreen(navController: NavController) {
     Spacer(modifier = Modifier.height(32.dp))
 
     Button(
-      onClick = { navController.navigate("orders") },
+      onClick = { navController.navigate("orders") {
+                            popUpTo(0) { inclusive = true }
+                        } },
       modifier = Modifier.fillMaxWidth(),
       colors = ButtonDefaults.buttonColors(
         containerColor = MaterialTheme.colorScheme.primary
@@ -69,7 +71,9 @@ fun OrderSuccessScreen(navController: NavController) {
     Spacer(modifier = Modifier.height(12.dp))
 
     OutlinedButton(
-      onClick = { navController.navigate("cart") },
+      onClick = { navController.navigate("cart") {
+                            popUpTo(0) { inclusive = true }
+                        } },
       modifier = Modifier.fillMaxWidth()
     ) {
       Text("Back to shopping cart")
@@ -78,7 +82,9 @@ fun OrderSuccessScreen(navController: NavController) {
     Spacer(modifier = Modifier.height(12.dp))
 
     OutlinedButton(
-      onClick = { navController.navigate("home") },
+      onClick = { navController.navigate("home") {
+                            popUpTo(0) { inclusive = true }
+                        } },
       modifier = Modifier.fillMaxWidth()
     ) {
       Text("Back to home")

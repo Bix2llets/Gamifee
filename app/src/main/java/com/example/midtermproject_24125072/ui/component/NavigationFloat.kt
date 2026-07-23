@@ -1,5 +1,6 @@
 package com.example.midtermproject_24125072.ui.component
 
+import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -53,6 +54,7 @@ fun FloatNavigationBox(navController: NavHostController) {
                 NavigationBarItem(
                     selected = currentRoute == item.route,
                     onClick = {
+                        Log.d("DEBUG:", "Switching to ${item.route}")
                         navController.navigate(item.route) {
                             popUpTo(navController.graph.findStartDestination().id) {
                                 saveState = true
