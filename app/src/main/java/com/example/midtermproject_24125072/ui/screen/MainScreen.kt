@@ -11,6 +11,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.midtermproject_24125072.ui.component.FloatNavigationBox
+import com.example.midtermproject_24125072.ui.screen.OrderSuccessScreen
 
 class BottomNavItem(
     val route: String,
@@ -50,7 +51,7 @@ fun AppMainScreen() {
                     val itemId = backStackEntry.arguments?.getString("itemId")
                     DetailsScreen(navController, itemId)
                 }
-    //            composable("orderSuccess") { OrderSuccessScreen(navController) }
+                composable("orderSuccess") { OrderSuccessScreen(navController) }
     //            composable("redeem")    { RedeemScreen(navController) }
 
             }

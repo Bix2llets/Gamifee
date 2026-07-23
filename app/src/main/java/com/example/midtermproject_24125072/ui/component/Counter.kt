@@ -20,43 +20,43 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun Counter(
-    value: Int,
-    onValueChange: (Int) -> Unit,
-    modifier: Modifier = Modifier,
-    min: Int = 1,
-    increment: Int = 1
+  value: Int,
+  onValueChange: (Int) -> Unit,
+  modifier: Modifier = Modifier,
+  min: Int = 1,
+  increment: Int = 1
 ) {
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(24.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(
-                onClick = { onValueChange(value - increment) },
-                enabled = value != min,
-                modifier = Modifier.size(36.dp)
-            ) {
-                Icon(
-                    Icons.Outlined.Remove,
-                    contentDescription = if (value - increment >= min) {
-                        ("Decrease amount by $increment")
-                    } else {
-                        "Cannot decrease any more"
-                    }
-                )
-            }
-            Text(
-                text = "$value",
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(horizontal = 8.dp)
-            )
-            IconButton(
-                onClick = { onValueChange(value + increment) },
-                modifier = Modifier.size(36.dp)
-            ) {
-                Icon(Icons.Outlined.Add, contentDescription = "Increase amount by $increment")
-            }
-        }
+  Surface(
+    modifier = modifier,
+    shape = RoundedCornerShape(24.dp),
+    color = MaterialTheme.colorScheme.surfaceVariant
+  ) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+      IconButton(
+        onClick = { onValueChange(value - increment) },
+        enabled = value != min,
+        modifier = Modifier.size(36.dp)
+      ) {
+        Icon(
+          Icons.Outlined.Remove,
+          contentDescription = if (value - increment >= min) {
+            ("Decrease amount by $increment")
+          } else {
+            "Cannot decrease any more"
+          }
+        )
+      }
+      Text(
+        text = "$value",
+        style = MaterialTheme.typography.bodyMedium,
+        modifier = Modifier.padding(horizontal = 8.dp)
+      )
+      IconButton(
+        onClick = { onValueChange(value + increment) },
+        modifier = Modifier.size(36.dp)
+      ) {
+        Icon(Icons.Outlined.Add, contentDescription = "Increase amount by $increment")
+      }
     }
+  }
 }
