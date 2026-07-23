@@ -32,9 +32,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -42,7 +44,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.midtermproject_24125072.data.CoffeeItem
-import com.example.midtermproject_24125072.data.coffeeList
+import com.example.midtermproject_24125072.data.loadCoffeeList
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.ShoppingCart
@@ -120,6 +122,8 @@ fun HomeHeader(onCartClick: () -> Unit, onAccountClick: () -> Unit) {
 
 @Composable
 fun CoffeeGrid(onCoffeeClick: (String) -> Unit) {
+    val context = LocalContext.current
+    val coffeeList = remember { loadCoffeeList(context) }
     Card(
         modifier = Modifier,
         shape = RoundedCornerShape(16.dp),
@@ -168,7 +172,7 @@ fun CoffeeCard(coffee: CoffeeItem, onClick: () -> Unit) {
                     Image(
                         painter = painterResource(coffee.imageResId),
                         contentDescription = coffee.name,
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier.padding(16.dp).fillMaxSize(),
                         contentScale = ContentScale.Crop
                     )
                 } else {
@@ -201,39 +205,3 @@ fun CoffeeCard(coffee: CoffeeItem, onClick: () -> Unit) {
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun PreviewHomeHeader() {
-    Row() {
-        HomeHeader({}, {})
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun PreviewHomeScreen() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp)
-    ) {
-        HomeHeader(
-            onCartClick = { },
-            onAccountClick = { /* navigate to profile later */ }
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        LoyaltyCard(4, 8, modifier = Modifier.padding(16.dp))
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        CoffeeGrid(
-            onCoffeeClick = {
-//                coffeeId ->
-//                navController.navigate("details/$coffeeId")
-            }
-        )
-
-    }
-}

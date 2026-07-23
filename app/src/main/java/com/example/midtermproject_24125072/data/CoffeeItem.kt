@@ -1,6 +1,9 @@
 package com.example.midtermproject_24125072.data
 
+import android.content.Context
 import com.example.midtermproject_24125072.R
+import org.json.JSONArray
+import java.io.IOException
 
 data class CoffeeItem(
     val name: String,
@@ -10,33 +13,36 @@ data class CoffeeItem(
     val id: String
 )
 
-val coffeeList = listOf(
-    CoffeeItem(
-        id = "americano",
-        name = "Americano",
-        description = "Placeholder",
-        imageResId = R.drawable.americano,
-        price = 3.00
-    ),
-    CoffeeItem(
-        id = "cappuchino",
-        name = "Cappuchino",
-        description = "Placeholder",
-        imageResId = R.drawable.cappuccino,
-        price = 3.00
-    ),
-    CoffeeItem(
-        id = "mocha",
-        name = "Mocha",
-        description = "Placeholder",
-        imageResId = R.drawable.mocha,
-        price = 3.00
-    ),
-    CoffeeItem(
-        id = "white_coffee",
-        name = "White coffee",
-        description = "Placeholder",
-        imageResId = R.drawable.flatwhite,
-        price = 3.00
-    ),
-)
+public  fun getImageResId(itemName: String): Int = when (itemName) {
+    "americano" -> R.drawable.americano
+    "cappuchino" -> R.drawable.cappuccino
+    "mocha" -> R.drawable.mocha
+    "flatwhite" -> R.drawable.flatwhite
+    else -> -1
+}
+
+fun loadCoffeeList(context: Context): List<CoffeeItem> {
+    val jsonString = try {
+        context.assets.open("coffee_items.json")
+            .bufferedReader()
+            .use { it.readText() }
+    } catch (e: IOException) {
+        return emptyList()
+    }
+    val jsonArray = JSONArray(jsonString)
+    val list = mutableListOf<CoffeeItem>()
+    for (i in 0 until jsonArray.length()) {
+        val obj = jsonArray.getJSONObject(i)
+        val imageResId = getImageResId(obj.getString("id"))
+        list.add(
+            CoffeeItem(
+                id = obj.getString("id"),
+                name = obj.getString("name"),
+                description = obj.getString("description"),
+                imageResId = imageResId,
+                price = obj.getDouble("price")
+            )
+        )
+    }
+    return list
+}

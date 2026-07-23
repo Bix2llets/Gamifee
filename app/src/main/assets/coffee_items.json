@@ -1,0 +1,26 @@
+[
+  {
+    "id": "americano",
+    "name": "Americano",
+    "description": "Placeholder",
+    "price": 3.00
+  },
+  {
+    "id": "cappuchino",
+    "name": "Cappuchino",
+    "description": "Placeholder",
+    "price": 3.00
+  },
+  {
+    "id": "mocha",
+    "name": "Mocha",
+    "description": "Placeholder",
+    "price": 3.00
+  },
+  {
+    "id": "flatwhite",
+    "name": "White coffee",
+    "description": "Placeholder",
+    "price": 3.00
+  }
+]
