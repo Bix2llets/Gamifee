@@ -37,15 +37,21 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.midtermproject_24125072.data.CartItem
+import com.example.midtermproject_24125072.data.OrderItem
+import com.example.midtermproject_24125072.data.createOrderItem
 import com.example.midtermproject_24125072.data.loadCartItem
+import com.example.midtermproject_24125072.data.loadOrderItem
 import com.example.midtermproject_24125072.data.saveCartItem
+import com.example.midtermproject_24125072.data.saveOrderItem
 import com.example.midtermproject_24125072.ui.component.CartItemCard
+import kotlin.math.max
 
 @Composable
 fun CartScreen(navController: NavController) {
   val context = LocalContext.current
   val cartFileName = context.filesDir.absolutePath + "/cart.json"
   var cartList by remember { mutableStateOf(mutableListOf<CartItem>()) }
+  val orderFileName = context.filesDir.absolutePath + "/order.json"
 
   LaunchedEffect(Unit) {
     cartList = loadCartItem(cartFileName).toMutableList()
@@ -125,9 +131,16 @@ fun CartScreen(navController: NavController) {
       Button(
         onClick = {
           val chosenItems = cartList.filter { it.isChosen }
-          cartList = cartList.filter { !it.isChosen }.toMutableList()
-          saveCartItem(cartFileName, cartList)
-          navController.navigate("orderSuccess")
+          if (chosenItems.size != 0) {
+            cartList = cartList.filter { !it.isChosen }.toMutableList()
+            saveCartItem(cartFileName, cartList)
+            val orderList: List<OrderItem> = loadOrderItem(orderFileName)
+            val maxId = orderList.fold(0){ result, value -> max(result, value.id)}
+            val newOrder: OrderItem = createOrderItem(chosenItems, maxId + 1, "Test Address" )
+            saveOrderItem(orderFileName, orderList + newOrder)
+
+            navController.navigate("orderSuccess")
+          }
         },
         colors = ButtonDefaults.buttonColors(
           containerColor = MaterialTheme.colorScheme.primary

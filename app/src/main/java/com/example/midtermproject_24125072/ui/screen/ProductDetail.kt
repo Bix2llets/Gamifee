@@ -192,6 +192,9 @@ fun ProductDetailScreen(navController: NavHostController, coffee: CoffeeItem) {
           quantity = countSelectAmount
         )
         saveCartItem(cartFileName, existingCart + newItem)
+        navController.navigate("home") {
+          popUpTo(0) { inclusive = true }
+        }
       }
     )
   }
