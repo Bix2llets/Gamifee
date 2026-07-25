@@ -3,6 +3,7 @@ package com.example.midtermproject_24125072.data
 import android.content.Context
 import com.example.midtermproject_24125072.R
 import org.json.JSONArray
+import org.json.JSONObject
 import java.io.IOException
 
 data class CoffeeItem(
@@ -11,7 +12,29 @@ data class CoffeeItem(
     val description: String,
     val imageResId: Int,
     val id: String
-)
+) {
+  fun serialize(): JSONObject {
+    val obj = JSONObject()
+    obj.put("id", id)
+    obj.put("name", name)
+    obj.put("description", description)
+    obj.put("price", price)
+    return obj
+  }
+
+  companion object {
+    fun deserialize(data: JSONObject): CoffeeItem {
+      val imageResId = getImageResId(data.getString("id"))
+      return CoffeeItem(
+        id = data.getString("id"),
+        name = data.getString("name"),
+        description = data.getString("description"),
+        imageResId = imageResId,
+        price = data.getDouble("price")
+      )
+    }
+  }
+}
 
 public  fun getImageResId(itemName: String): Int = when (itemName) {
     "americano" -> R.drawable.americano
@@ -21,7 +44,7 @@ public  fun getImageResId(itemName: String): Int = when (itemName) {
     else -> -1
 }
 
-fun loadCoffeeList(context: Context): List<CoffeeItem> {
+fun CoffeeItem.Companion.loadList(context: Context): List<CoffeeItem> {
     val jsonString = try {
         context.assets.open("coffee_items.json")
             .bufferedReader()
@@ -30,19 +53,5 @@ fun loadCoffeeList(context: Context): List<CoffeeItem> {
         return emptyList()
     }
     val jsonArray = JSONArray(jsonString)
-    val list = mutableListOf<CoffeeItem>()
-    for (i in 0 until jsonArray.length()) {
-        val obj = jsonArray.getJSONObject(i)
-        val imageResId = getImageResId(obj.getString("id"))
-        list.add(
-            CoffeeItem(
-                id = obj.getString("id"),
-                name = obj.getString("name"),
-                description = obj.getString("description"),
-                imageResId = imageResId,
-                price = obj.getDouble("price")
-            )
-        )
-    }
-    return list
+    return (0 until jsonArray.length()).map { CoffeeItem.deserialize(jsonArray.getJSONObject(it)) }
 }

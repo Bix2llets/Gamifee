@@ -15,57 +15,52 @@ data class CartItem(
   val ice: String,
   val isChosen: Boolean = false,
   val quantity: Int = 1,
-)
+) {
+  fun serialize(): JSONObject {
+    val obj = JSONObject()
+    obj.put("inCartId", inCartId)
+    obj.put("itemId", itemId)
+    obj.put("name", name)
+    obj.put("cost", cost)
+    obj.put("shotInfo", shotInfo)
+    obj.put("temperature", temperature)
+    obj.put("size", size)
+    obj.put("ice", ice)
+    obj.put("quantity", quantity)
+    return obj
+  }
 
-fun loadCartItem(fileName: String): List<CartItem> {
+  companion object {
+    fun deserialize(data: JSONObject): CartItem {
+      return CartItem(
+        inCartId = data.optInt("inCartId", 0),
+        itemId = data.optString("itemId", ""),
+        name = data.getString("name"),
+        cost = data.getDouble("cost"),
+        shotInfo = data.optString("shotInfo", ""),
+        temperature = data.optString("temperature", ""),
+        size = data.optString("size", ""),
+        ice = data.optString("ice", ""),
+        quantity = data.optInt("quantity", 1)
+      )
+    }
+  }
+}
+
+fun List<CartItem>.save(fileName: String) {
+  val jsonArray = JSONArray()
+  forEach { jsonArray.put(it.serialize()) }
+  File(fileName).writeText(jsonArray.toString())
+}
+
+fun CartItem.Companion.loadList(fileName: String): List<CartItem> {
   val file = File(fileName)
   if (!file.exists()) return emptyList()
 
   val content = file.readText().trim()
   if (content.isEmpty()) return emptyList()
 
-  val jsonArray =  JSONArray(content)
-  val list = mutableListOf<CartItem>()
-  for (i in 0 until jsonArray.length()) {
-    val obj = jsonArray.getJSONObject(i)
-    list.add(
-      deserializeCartItem(obj)
-    )
-  }
-  return list
+  val jsonArray = JSONArray(content)
+  return (0 until jsonArray.length()).map { CartItem.deserialize(jsonArray.getJSONObject(it)) }
 }
 
-fun deserializeCartItem(obj: JSONObject): CartItem = CartItem(
-  inCartId = obj.optInt("inCartId", 0),
-  itemId = obj.optString("itemId", ""),
-  name = obj.getString("name"),
-  cost = obj.getDouble("cost"),
-  shotInfo = obj.optString("shotInfo", ""),
-  temperature = obj.optString("temperature", ""),
-  size = obj.optString("size", ""),
-  ice = obj.optString("ice", ""),
-  quantity = obj.optInt("quantity", 1)
-)
-
-fun saveCartItem(fileName: String, data: List<CartItem>) {
-  val jsonArray = JSONArray()
-  for (item in data) {
-    val obj = serializeCartItem(item)
-    jsonArray.put(obj)
-  }
-  File(fileName).writeText(jsonArray.toString())
-}
-
- fun serializeCartItem(item: CartItem): JSONObject {
-  val obj = JSONObject()
-  obj.put("inCartId", item.inCartId)
-  obj.put("itemId", item.itemId)
-  obj.put("name", item.name)
-  obj.put("cost", item.cost)
-  obj.put("shotInfo", item.shotInfo)
-  obj.put("temperature", item.temperature)
-  obj.put("size", item.size)
-  obj.put("ice", item.ice)
-  obj.put("quantity", item.quantity)
-  return obj
-}

@@ -4,6 +4,8 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -81,7 +83,7 @@ fun OrderCard(
         offsetX = 0f
       },
       title = { Text("Mark as completed") },
-      text = { Text("Mark order from ${order.address} as completed?") },
+      text = { Text("Mark order as completed?") },
       dismissButton = {
         TextButton(onClick = {
           showCompleteDialog = false
@@ -175,8 +177,10 @@ fun OrderCard(
             .fillMaxWidth()
             .padding(12.dp)
         ) {
-          Column {
-            Text("${order.address}", style = MaterialTheme.typography.bodyMedium)
+          Column(modifier = Modifier.weight(1f)) {
+            Row(modifier = Modifier.horizontalScroll(rememberScrollState())) {
+              Text("${order.address}", style = MaterialTheme.typography.bodyMedium)
+            }
             Spacer(Modifier.height(4.dp))
             Text("${formattedTime}", style = MaterialTheme.typography.bodySmall)
           }
@@ -234,24 +238,7 @@ fun ExpandableCartItemList(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
           ) {
-            Text(
-              text = item.name,
-              style = MaterialTheme.typography.bodyLarge,
-              fontWeight = FontWeight.Medium,
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-              text = "$${String.format("%.2f", item.cost)}",
-              style = MaterialTheme.typography.bodyMedium,
-              color = MaterialTheme.colorScheme.onSurfaceVariant,
-              fontWeight = FontWeight.SemiBold
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-              text = "${item.quantity} cups",
-              style = MaterialTheme.typography.bodyMedium,
-              color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            BasicInfoDisplay(item.name, item.cost, item.quantity)
           }
           if (index < items.lastIndex) {
             Spacer(modifier = Modifier.height(8.dp))
@@ -261,6 +248,22 @@ fun ExpandableCartItemList(
         Spacer(modifier = Modifier.height(4.dp))
       }
     }
+  }
+}
+
+@Composable
+ fun BasicInfoDisplay(name: String, unitPrice: Double, quantity: Int) {
+  Row(
+    modifier = Modifier
+      .fillMaxWidth()
+      .padding(vertical = 4.dp),
+    horizontalArrangement = Arrangement.SpaceBetween
+  ) {
+    Text("${name} x${quantity}")
+    Text(
+      "$${String.format("%.2f", unitPrice * quantity)}",
+      fontWeight = FontWeight.SemiBold
+    )
   }
 }
 

@@ -44,7 +44,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.midtermproject_24125072.data.CoffeeItem
-import com.example.midtermproject_24125072.data.loadCoffeeList
+import com.example.midtermproject_24125072.data.loadList
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.ShoppingCart
@@ -117,7 +117,7 @@ fun HomeHeader(navController: NavHostController) {
 @Composable
 fun CoffeeGrid(onCoffeeClick: (String) -> Unit) {
     val context = LocalContext.current
-    val coffeeList = remember { loadCoffeeList(context) }
+    val coffeeList = remember { CoffeeItem.loadList(context) }
     Card(
         modifier = Modifier,
         shape = RoundedCornerShape(16.dp),

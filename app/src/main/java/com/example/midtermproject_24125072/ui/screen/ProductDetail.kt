@@ -38,9 +38,8 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.midtermproject_24125072.data.CartItem
 import com.example.midtermproject_24125072.data.CoffeeItem
-import com.example.midtermproject_24125072.data.loadCartItem
-import com.example.midtermproject_24125072.data.loadCoffeeList
-import com.example.midtermproject_24125072.data.saveCartItem
+import com.example.midtermproject_24125072.data.loadList
+import com.example.midtermproject_24125072.data.save
 import com.example.midtermproject_24125072.ui.component.CartPreviewButton
 import com.example.midtermproject_24125072.ui.component.ChoiceGroup
 import com.example.midtermproject_24125072.ui.component.ChoiceOption
@@ -177,7 +176,7 @@ fun ProductDetailScreen(navController: NavHostController, coffee: CoffeeItem) {
     val cartFileName = context.filesDir.absolutePath + "/cart.json"
     AddToCartButton(
       onClick = {
-        val existingCart = loadCartItem(cartFileName)
+        val existingCart = CartItem.loadList(cartFileName)
         val newId = (existingCart.maxOfOrNull { it.inCartId } ?: 0) + 1
         val newItem = CartItem(
           inCartId = newId,
@@ -190,7 +189,7 @@ fun ProductDetailScreen(navController: NavHostController, coffee: CoffeeItem) {
           ice = if (selectedTemperature == "Hot") "N/A" else selectedIce,
           quantity = countSelectAmount
         )
-        saveCartItem(cartFileName, existingCart + newItem)
+        (existingCart + newItem).save(cartFileName)
         navController.navigate("home") {
           popUpTo(0) { inclusive = true }
         }
@@ -403,7 +402,7 @@ private fun DisplayPrice(coffeePrice: Double) {
 @Composable
 fun DetailsScreen(navController: NavHostController, itemId: String?) {
   val context = LocalContext.current
-  val coffeeList = remember { loadCoffeeList(context) }
+  val coffeeList = remember { CoffeeItem.loadList(context) }
   val coffee: CoffeeItem? = coffeeList.find { it.id == itemId }
   if (coffee == null || itemId == null) {
     Text("Item not available")

@@ -16,11 +16,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.ShoppingCart
 import androidx.compose.material3.Button
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -29,20 +35,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
 import com.example.midtermproject_24125072.data.CartItem
 import com.example.midtermproject_24125072.data.OrderItem
-import com.example.midtermproject_24125072.data.createOrderItem
-import com.example.midtermproject_24125072.data.loadCartItem
-import com.example.midtermproject_24125072.data.loadOrderItem
-import com.example.midtermproject_24125072.data.saveCartItem
-import com.example.midtermproject_24125072.data.saveOrderItem
+import com.example.midtermproject_24125072.data.loadList
+import com.example.midtermproject_24125072.data.save
+import com.example.midtermproject_24125072.ui.component.BasicInfoDisplay
 import com.example.midtermproject_24125072.ui.component.CartItemCard
 import kotlin.math.max
 
@@ -52,9 +53,10 @@ fun CartScreen(navController: NavController) {
   val cartFileName = context.filesDir.absolutePath + "/cart.json"
   var cartList by remember { mutableStateOf(mutableListOf<CartItem>()) }
   val orderFileName = context.filesDir.absolutePath + "/order.json"
+  var showOrderConfirm by remember { mutableStateOf(false) }
 
   LaunchedEffect(Unit) {
-    cartList = loadCartItem(cartFileName).toMutableList()
+    cartList = CartItem.loadList(cartFileName).toMutableList()
   }
 
   val selectedTotal = cartList
@@ -97,7 +99,7 @@ fun CartScreen(navController: NavController) {
           item = cartItem,
           onDelete = {
             cartList = cartList.filter { it.inCartId != cartItem.inCartId }.toMutableList()
-            saveCartItem(cartFileName, cartList)
+            cartList.save(cartFileName)
           },
           onToggleChosen = {
             cartList = cartList.map {
@@ -108,7 +110,7 @@ fun CartScreen(navController: NavController) {
             cartList = cartList.map {
               if (it.inCartId == cartItem.inCartId) it.copy(quantity = newQty) else it
             }.toMutableList()
-            saveCartItem(cartFileName, cartList)
+            cartList.save(cartFileName)
           }
         )
         Spacer(modifier = Modifier.height(12.dp))
@@ -130,17 +132,8 @@ fun CartScreen(navController: NavController) {
 
       Button(
         onClick = {
-          val chosenItems = cartList.filter { it.isChosen }
-          if (chosenItems.size != 0) {
-            cartList = cartList.filter { !it.isChosen }.toMutableList()
-            saveCartItem(cartFileName, cartList)
-            val orderList: List<OrderItem> = loadOrderItem(orderFileName)
-            val maxId = orderList.fold(0){ result, value -> max(result, value.id)}
-            val newOrder: OrderItem = createOrderItem(chosenItems, maxId + 1, "Test Address" )
-            saveOrderItem(orderFileName, orderList + newOrder)
-
-            navController.navigate("orderSuccess")
-          }
+          if (cartList.filter{it.isChosen}.size != 0)
+            showOrderConfirm = true
         },
         colors = ButtonDefaults.buttonColors(
           containerColor = MaterialTheme.colorScheme.primary
@@ -153,6 +146,25 @@ fun CartScreen(navController: NavController) {
         Spacer(modifier = Modifier.width(8.dp))
         Text("Checkout")
       }
+    }
+    if (showOrderConfirm) {
+      val chosenItems = cartList.filter { it.isChosen }
+      val cartList = cartList.filter { !it.isChosen }.toMutableList()
+      CheckoutPanel(
+        chosenItems,
+        onDismiss = { showOrderConfirm = false },
+        onConfirmation = { address ->
+          if (chosenItems.size != 0) {
+            cartList.save(cartFileName)
+            val orderList: List<OrderItem> = OrderItem.loadList(orderFileName)
+            val maxId = orderList.fold(0) { result, value -> max(result, value.id) }
+            val newOrder: OrderItem = OrderItem.create(chosenItems, maxId + 1, address)
+            (orderList + newOrder).save(orderFileName)
+
+            navController.navigate("orderSuccess")
+          }
+        }
+      )
     }
   }
 }
@@ -175,96 +187,107 @@ private val mockCartItems = listOf(
   )
 )
 
-@Preview(showBackground = true, showSystemUi = true)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CartScreenPreview() {
-  var cartList by remember { mutableStateOf(mockCartItems.toMutableList()) }
+private fun CheckoutPanel(
+  chosenItems: List<CartItem>,
+  onDismiss: () -> Unit,
+  onConfirmation: (String) -> Unit
+) {
+  var address by remember { mutableStateOf("") }
 
-  val selectedTotal = cartList
-    .filter { it.isChosen }
-    .sumOf { it.cost * it.quantity }
-
-  Column(
-    modifier = Modifier
-      .fillMaxSize()
-      .padding(32.dp)
+  ModalBottomSheet(
+    onDismissRequest = onDismiss,
+    sheetState = rememberModalBottomSheetState(),
   ) {
-    Box(
-      modifier = Modifier
-        .fillMaxWidth()
-        .padding(horizontal = 4.dp),
-    ) {
-      Text(
-        text = "My Cart",
-        style = MaterialTheme.typography.titleLarge,
-        fontWeight = FontWeight.Bold,
-        modifier = Modifier.align(Alignment.Center)
-      )
-    }
-
-    Spacer(modifier = Modifier.height(8.dp))
-
     Column(
       modifier = Modifier
-        .weight(1f)
-        .verticalScroll(rememberScrollState())
+        .fillMaxWidth()
+        .padding(16.dp)
     ) {
-      cartList.forEach { cartItem ->
-        CartItemCard(
-          item = cartItem,
-          onDelete = {
-            cartList = cartList.filter { it.inCartId != cartItem.inCartId }.toMutableList()
-          },
-          onToggleChosen = {
-            cartList = cartList.map {
-              if (it.inCartId == cartItem.inCartId) it.copy(isChosen = !it.isChosen) else it
-            }.toMutableList()
-          },
-          onQuantityChange = { newQty ->
-            cartList = cartList.map {
-              if (it.inCartId == cartItem.inCartId) it.copy(quantity = newQty) else it
-            }.toMutableList()
-          }
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-      }
-    }
-
-    Spacer(modifier = Modifier.height(8.dp))
-
-    Row(
-      modifier = Modifier.fillMaxWidth(),
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-      Column {
-
+      Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceAround,
+        verticalAlignment = Alignment.CenterVertically
+      )
+      {
         Text(
-          text = "Total",
-          style = MaterialTheme.typography.titleSmall,
-          fontWeight = FontWeight.Bold,
-          color = Color.Gray.copy(alpha = 0.5f)
-
-        )
-        Text(
-          text = "$${String.format("%.2f", selectedTotal)}",
+          "Your planned order",
           style = MaterialTheme.typography.titleMedium,
-          fontWeight = FontWeight.Bold
+          fontWeight = FontWeight.SemiBold
         )
       }
+      Spacer(modifier = Modifier.height(16.dp))
+      CheckoutItemDisplay(chosenItems)
 
-      Button(
-        onClick = {
-          cartList = cartList.filter { !it.isChosen }.toMutableList()
-        },
-        colors = ButtonDefaults.buttonColors(
-          containerColor = MaterialTheme.colorScheme.primary
-        )
-      ) {
-        Icon(Icons.Outlined.ShoppingCart, contentDescription = null)
-        Spacer(modifier = Modifier.width(8.dp))
-        Text("Checkout")
-      }
+      Spacer(modifier = Modifier.height(16.dp))
+
+      OutlinedTextField(
+        value = address,
+        onValueChange = { address = it },
+        label = { Text("Delivery Address") },
+        modifier = Modifier.fillMaxWidth()
+      )
+
+      Spacer(modifier = Modifier.height(16.dp))
+
+      CheckoutButton(onConfirm = { onConfirmation(address) })
     }
+  }
+}
+
+@Composable
+private fun CheckoutItemDisplay(chosenItems: List<CartItem>) {
+  Column(
+    modifier = Modifier
+      .fillMaxWidth()
+      .verticalScroll(rememberScrollState())
+  ) {
+    chosenItems.forEach { item ->
+      Row(
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.Top
+      ) {
+        BasicInfoDisplay(item.name, item.cost, item.quantity)
+      }
+      Spacer(modifier = Modifier.height(8.dp))
+    }
+  }
+}
+
+
+@Composable
+private fun CheckoutButton(onConfirm: () -> Unit) {
+  var showDialog by remember { mutableStateOf(false) }
+
+  if (showDialog) {
+    AlertDialog(
+      onDismissRequest = { showDialog = false },
+      title = { Text("Confirm Order") },
+      text = { Text("Are you sure you want to place this order?") },
+      dismissButton = {
+        TextButton(onClick = { showDialog = false }) {
+          Text("Cancel")
+        }
+      },
+      confirmButton = {
+        TextButton(onClick = {
+          showDialog = false
+          onConfirm()
+        }) {
+          Text("Confirm")
+        }
+      }
+    )
+  }
+
+  Button(
+    onClick = { showDialog = true },
+    modifier = Modifier.fillMaxWidth(),
+    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+  ) {
+    Icon(Icons.Outlined.ShoppingCart, contentDescription = null)
+    Spacer(modifier = Modifier.width(8.dp))
+    Text("Place Order")
   }
 }

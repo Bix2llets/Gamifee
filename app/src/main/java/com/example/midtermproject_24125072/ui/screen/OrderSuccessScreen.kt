@@ -70,16 +70,16 @@ fun OrderSuccessScreen(navController: NavController) {
 
     Spacer(modifier = Modifier.height(12.dp))
 
-    OutlinedButton(
-      onClick = { navController.navigate("cart") {
-                            popUpTo(0) { inclusive = true }
-                        } },
-      modifier = Modifier.fillMaxWidth()
-    ) {
-      Text("Back to shopping cart")
-    }
-
-    Spacer(modifier = Modifier.height(12.dp))
+//    OutlinedButton(
+//      onClick = { navController.navigate("cart") {
+//                            popUpTo(0) { inclusive = true }
+//                        } },
+//      modifier = Modifier.fillMaxWidth()
+//    ) {
+//      Text("Back to shopping cart")
+//    }
+//
+//    Spacer(modifier = Modifier.height(12.dp))
 
     OutlinedButton(
       onClick = { navController.navigate("home") {
