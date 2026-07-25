@@ -63,7 +63,7 @@ fun OrderCard(
   }
   var expanded by remember { mutableStateOf(false) }
   val rotationAngle by animateFloatAsState(
-    targetValue = if (expanded) 180f else -90f,
+    targetValue = if (expanded) 180f else 0f,
     animationSpec = tween(durationMillis = 300),
     label = "arrowRotation"
   )

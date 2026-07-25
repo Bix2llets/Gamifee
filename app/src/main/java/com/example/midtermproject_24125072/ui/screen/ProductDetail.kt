@@ -41,6 +41,7 @@ import com.example.midtermproject_24125072.data.CoffeeItem
 import com.example.midtermproject_24125072.data.loadCartItem
 import com.example.midtermproject_24125072.data.loadCoffeeList
 import com.example.midtermproject_24125072.data.saveCartItem
+import com.example.midtermproject_24125072.ui.component.CartPreviewButton
 import com.example.midtermproject_24125072.ui.component.ChoiceGroup
 import com.example.midtermproject_24125072.ui.component.ChoiceOption
 import com.example.midtermproject_24125072.ui.component.Counter
@@ -67,9 +68,7 @@ fun ProductDetailScreen(navController: NavHostController, coffee: CoffeeItem) {
         style = MaterialTheme.typography.titleLarge,
         fontWeight = FontWeight.Bold
       )
-      IconButton(onClick = { }) {
-        Icon(Icons.Outlined.ShoppingCart, contentDescription = "Cart")
-      }
+      CartPreviewButton(navController)
     }
 
     Box(

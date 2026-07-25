@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -36,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.midtermproject_24125072.data.OrderItem
@@ -132,9 +134,7 @@ private fun TabBar(
 
   Row(
     modifier = Modifier
-      .fillMaxWidth()
-      .clip(RoundedCornerShape(12.dp))
-      .background(surfaceVariant),
+      .fillMaxWidth().height(64.dp),
     horizontalArrangement = Arrangement.SpaceEvenly,
   ) {
     tabLabels.forEachIndexed { index, label ->
@@ -153,21 +153,34 @@ private fun TabBar(
             if (isActive) {
               Modifier
                 .padding(4.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(MaterialTheme.colorScheme.surface)
+//                .clip(RoundedCornerShape(8.dp))
             } else {
               Modifier.padding(4.dp)
             }
           )
-          .padding(vertical = 10.dp),
-        contentAlignment = Alignment.Center
       ) {
         Text(
           text = label,
+          // Add vertical padding directly to the text so it expands the Box height
+          modifier = Modifier
+            .align(Alignment.Center)
+            .padding(vertical = 10.dp),
           style = MaterialTheme.typography.titleSmall,
           fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
           color = textColor,
         )
+
+        // The underline will now stick precisely to the bottom edge
+        if (isActive)
+{
+        Box(
+          modifier = Modifier
+            .align(Alignment.BottomCenter)
+            .fillMaxWidth()
+            .height(2.dp)
+            .background(MaterialTheme.colorScheme.primary)
+        )
+}
       }
     }
   }
@@ -206,4 +219,15 @@ private fun OrderList(
       }
     }
   }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PreviewTabBar() {
+  TabBar(0, {})
+}
+@Preview(showBackground = true)
+@Composable
+fun PreviewTabBar1() {
+  TabBar(1, {})
 }

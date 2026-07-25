@@ -20,8 +20,10 @@ data class CartItem(
 fun loadCartItem(fileName: String): List<CartItem> {
   val file = File(fileName)
   if (!file.exists()) return emptyList()
+
   val content = file.readText().trim()
   if (content.isEmpty()) return emptyList()
+
   val jsonArray =  JSONArray(content)
   val list = mutableListOf<CartItem>()
   for (i in 0 until jsonArray.length()) {

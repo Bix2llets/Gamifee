@@ -48,6 +48,7 @@ import com.example.midtermproject_24125072.data.loadCoffeeList
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.ShoppingCart
+import com.example.midtermproject_24125072.ui.component.CartPreviewButton
 import com.example.midtermproject_24125072.ui.component.FloatNavigationBox
 import com.example.midtermproject_24125072.ui.component.LoyaltyCard
 
@@ -59,8 +60,7 @@ fun HomeScreen(navController: NavHostController) {
             .padding(all = 32.dp)
     ) {
         HomeHeader(
-            onCartClick = { navController.navigate("cart")},
-            onAccountClick = { /* navigate to profile later */ }
+            navController
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -79,7 +79,7 @@ fun HomeScreen(navController: NavHostController) {
 }
 
 @Composable
-fun HomeHeader(onCartClick: () -> Unit, onAccountClick: () -> Unit) {
+fun HomeHeader(navController: NavHostController) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -102,15 +102,9 @@ fun HomeHeader(onCartClick: () -> Unit, onAccountClick: () -> Unit) {
         }
 
         Row() {
-            IconButton(onClick = onCartClick) {
-                Icon(
-                    imageVector = Icons.Outlined.ShoppingCart,
-                    contentDescription = "Your Cart"
+            CartPreviewButton(navController)
 
-                )
-            }
-
-            IconButton(onClick = onAccountClick) {
+            IconButton(onClick = {}) {
                 Icon(
                     imageVector = Icons.Outlined.Person,
                     contentDescription = "Account setting"
