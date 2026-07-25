@@ -38,6 +38,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.midtermproject_24125072.data.OrderItem
+import com.example.midtermproject_24125072.data.getWorkingDir
 import com.example.midtermproject_24125072.data.loadList
 import com.example.midtermproject_24125072.data.save
 import com.example.midtermproject_24125072.ui.component.OrderCard
@@ -46,7 +47,7 @@ import com.example.midtermproject_24125072.ui.component.OrderCard
 @Composable
 fun OrdersScreen(navHostController: NavHostController) {
   val context = androidx.compose.ui.platform.LocalContext.current
-  val orderFileName = context.filesDir.absolutePath + "/order.json"
+  val orderFileName = getWorkingDir() + "/order.json"
   var orderList by remember { mutableStateOf(mutableListOf<OrderItem>()) }
   var selectedTabIndex by remember { mutableIntStateOf(0) }
 

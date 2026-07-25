@@ -15,7 +15,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.outlined.ShoppingCart
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -38,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.midtermproject_24125072.data.CartItem
 import com.example.midtermproject_24125072.data.CoffeeItem
+import com.example.midtermproject_24125072.data.getWorkingDir
 import com.example.midtermproject_24125072.data.loadList
 import com.example.midtermproject_24125072.data.save
 import com.example.midtermproject_24125072.ui.component.CartPreviewButton
@@ -173,7 +173,7 @@ fun ProductDetailScreen(navController: NavHostController, coffee: CoffeeItem) {
     Spacer(modifier = Modifier.height(8.dp))
 
     val context = LocalContext.current
-    val cartFileName = context.filesDir.absolutePath + "/cart.json"
+    val cartFileName = getWorkingDir() + "/cart.json"
     AddToCartButton(
       onClick = {
         val existingCart = CartItem.loadList(cartFileName)

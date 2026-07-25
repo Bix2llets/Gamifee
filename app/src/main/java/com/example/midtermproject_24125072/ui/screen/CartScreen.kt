@@ -35,12 +35,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.midtermproject_24125072.data.CartItem
 import com.example.midtermproject_24125072.data.OrderItem
+import com.example.midtermproject_24125072.data.UserLoyalty
+import com.example.midtermproject_24125072.data.getWorkingDir
+import com.example.midtermproject_24125072.data.load
 import com.example.midtermproject_24125072.data.loadList
 import com.example.midtermproject_24125072.data.save
 import com.example.midtermproject_24125072.ui.component.BasicInfoDisplay
@@ -49,10 +51,10 @@ import kotlin.math.max
 
 @Composable
 fun CartScreen(navController: NavController) {
-  val context = LocalContext.current
-  val cartFileName = context.filesDir.absolutePath + "/cart.json"
+  val cartFileName = getWorkingDir() + "/cart.json"
   var cartList by remember { mutableStateOf(mutableListOf<CartItem>()) }
-  val orderFileName = context.filesDir.absolutePath + "/order.json"
+  val orderFileName = getWorkingDir() + "/order.json"
+  val loyaltyFileName = getWorkingDir() + "/loyalty.json"
   var showOrderConfirm by remember { mutableStateOf(false) }
 
   LaunchedEffect(Unit) {
@@ -132,7 +134,7 @@ fun CartScreen(navController: NavController) {
 
       Button(
         onClick = {
-          if (cartList.filter{it.isChosen}.size != 0)
+          if (cartList.filter { it.isChosen }.size != 0)
             showOrderConfirm = true
         },
         colors = ButtonDefaults.buttonColors(
@@ -161,6 +163,12 @@ fun CartScreen(navController: NavController) {
             val newOrder: OrderItem = OrderItem.create(chosenItems, maxId + 1, address)
             (orderList + newOrder).save(orderFileName)
 
+            val userLoyalty = UserLoyalty.load(loyaltyFileName)
+            val updatedLoyalty = userLoyalty.addCupBought(
+              newOrder.orderList.fold(0) {result, value -> value.quantity + result},
+              newOrder.orderList.fold(0.0) { result, value -> value.cost * value.quantity + result }
+            )
+            updatedLoyalty.save(loyaltyFileName)
             navController.navigate("orderSuccess")
           }
         }

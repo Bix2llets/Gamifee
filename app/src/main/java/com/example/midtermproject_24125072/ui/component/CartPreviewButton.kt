@@ -35,14 +35,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.midtermproject_24125072.data.CartItem
+import com.example.midtermproject_24125072.data.getWorkingDir
 import com.example.midtermproject_24125072.data.loadList
 
 
 @Composable
 fun CartPreviewButton(navController: NavController){
-  val context = LocalContext.current
   var showSheet: Boolean by remember{mutableStateOf(false)}
-  var cartFileName = context.filesDir.absolutePath + "/cart.json"
+  var cartFileName = getWorkingDir() + "/cart.json"
   var cartItems   by remember {mutableStateOf(emptyList<CartItem>())}
 
   LaunchedEffect(Unit) {
