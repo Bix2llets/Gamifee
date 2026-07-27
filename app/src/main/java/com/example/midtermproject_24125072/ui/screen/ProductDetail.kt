@@ -6,8 +6,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -26,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.midtermproject_24125072.data.CartItem
 import com.example.midtermproject_24125072.data.CoffeeItem
+import com.example.midtermproject_24125072.data.CoffeeOption
 import com.example.midtermproject_24125072.data.getWorkingDir
 import com.example.midtermproject_24125072.data.loadList
 import com.example.midtermproject_24125072.data.save
@@ -44,13 +46,55 @@ import com.example.midtermproject_24125072.ui.component.CartPreviewButton
 import com.example.midtermproject_24125072.ui.component.ChoiceGroup
 import com.example.midtermproject_24125072.ui.component.ChoiceOption
 import com.example.midtermproject_24125072.ui.component.Counter
+import com.example.midtermproject_24125072.ui.util.LocalIsLandscape
 
 @Composable
 fun ProductDetailScreen(navController: NavHostController, coffee: CoffeeItem) {
+  val isLandscape = LocalIsLandscape.current
+
+  var countSelectAmount by rememberSaveable { mutableStateOf(1) }
+
+  val shotOption = listOf(
+    ChoiceOption("Single", null), ChoiceOption("Double", null)
+  )
+  var selectedShot by rememberSaveable { mutableStateOf(shotOption[0].label) }
+
+  val temperatureOption = listOf(
+    ChoiceOption("Hot", R.drawable.cup_hot), ChoiceOption("Cold", R.drawable.cup_iced)
+  )
+  var selectedTemperature by rememberSaveable { mutableStateOf(temperatureOption[0].label) }
+
+  val sizeOption = listOf(
+    ChoiceOption("Small", R.drawable.cup_small),
+    ChoiceOption("Medium", R.drawable.cup_medium),
+    ChoiceOption("Large", R.drawable.cup_large)
+  )
+  var selectedSize by rememberSaveable { mutableStateOf(sizeOption[0].label) }
+
+  val iceOption = listOf(
+    ChoiceOption("Less", R.drawable.ice1),
+    ChoiceOption("Normal", R.drawable.ice2),
+    ChoiceOption("More", R.drawable.ice3)
+  )
+  var selectedIce by rememberSaveable { mutableStateOf(iceOption[0].label) }
+
+  var coffeePrice = calculateCoffeePrice(
+    coffee,
+    shotOption,
+    selectedShot,
+    sizeOption,
+    selectedSize,
+    iceOption,
+    selectedIce,
+    selectedTemperature,
+  )
+
+  val cartFileName = getWorkingDir() + "/cart.json"
+
   Column(
     modifier = Modifier
       .fillMaxSize()
-      .padding(32.dp)
+      .padding(all = if (isLandscape) 16.dp else 32.dp)
   ) {
     Row(
       modifier = Modifier
@@ -70,123 +114,80 @@ fun ProductDetailScreen(navController: NavHostController, coffee: CoffeeItem) {
       CartPreviewButton(navController)
     }
 
-    Box(
-      modifier = Modifier
-        .fillMaxWidth()
-        .height(160.dp)
-    ) {
-      if (coffee.imageResId != -1) {
-        Image(
-          painter = painterResource(coffee.imageResId),
-          contentDescription = coffee.name,
-          modifier = Modifier.fillMaxSize(),
-          contentScale = ContentScale.FillHeight
+    if (isLandscape) {
+      Row(
+        modifier = Modifier
+          .weight(1f)
+          .fillMaxWidth()
+      ) {
+        ProductImageDisplay(
+          coffee = coffee,
+          modifier = Modifier
+            .weight(0.35f)
+            .fillMaxHeight()
         )
-      } else {
-        Surface(
-          modifier = Modifier.fillMaxSize(),
-          color = MaterialTheme.colorScheme.primaryContainer
-        ) {
-          Box(contentAlignment = Alignment.Center) {
-            Text(
-              text = coffee.name.first().toString(),
-              style = MaterialTheme.typography.displayLarge,
-              color = MaterialTheme.colorScheme.onPrimaryContainer
-            )
-          }
-        }
-      }
-    }
-
-    var countSelectAmount by remember { mutableStateOf(1) }
-
-    val shotOption = listOf(
-      ChoiceOption("Single", null), ChoiceOption("Double", null)
-    )
-    var selectedShot by remember { mutableStateOf(shotOption[0].label) }
-
-    val temperatureOption = listOf(
-      ChoiceOption("Hot", R.drawable.cup_hot), ChoiceOption("Cold", R.drawable.cup_iced)
-    )
-    var selectedTemperature by remember { mutableStateOf(temperatureOption[0].label) }
-
-    val sizeOption = listOf(
-      ChoiceOption("Small", R.drawable.cup_small),
-      ChoiceOption("Medium", R.drawable.cup_medium),
-      ChoiceOption("Large", R.drawable.cup_large)
-    )
-    var selectedSize by remember { mutableStateOf(sizeOption[0].label) }
-
-    val iceOption = listOf(
-      ChoiceOption("Less", R.drawable.ice1),
-      ChoiceOption("Normal", R.drawable.ice2),
-      ChoiceOption("More", R.drawable.ice3)
-    )
-    var selectedIce by remember { mutableStateOf(iceOption[0].label) }
-
-    Column(
-      modifier = Modifier
-        .weight(1f)
-        .verticalScroll(rememberScrollState())
-    ) {
-      CoffeeAmount(
-        coffee = coffee,
-        countSelectAmount = countSelectAmount,
-        onCountChange = { countSelectAmount = it }
-      )
-      ShotOption(
-        shotOption = shotOption,
-        selectedShot = selectedShot,
-        onShotChanged = { selectedShot = it }
-      )
-      TemperatureOption(
-        temperatureOption = temperatureOption,
-        selectedTemperature = selectedTemperature,
-        onTemperatureChanged = { selectedTemperature = it }
-      )
-      SizeOption(
-        sizeOption = sizeOption,
-        selectedSize = selectedSize,
-        onSizeChanged = { selectedSize = it }
-      )
-      if (selectedTemperature != "Hot") {
-        IceOption(
+        ProductOptionSection(
+          coffee = coffee,
+          countSelectAmount = countSelectAmount,
+          onCountChange = { countSelectAmount = it },
+          shotOption = shotOption,
+          selectedShot = selectedShot,
+          onShotChanged = { selectedShot = it },
+          temperatureOption = temperatureOption,
+          selectedTemperature = selectedTemperature,
+          onTemperatureChanged = { selectedTemperature = it },
+          sizeOption = sizeOption,
+          selectedSize = selectedSize,
+          onSizeChanged = { selectedSize = it },
           iceOption = iceOption,
           selectedIce = selectedIce,
-          onIceChanged = { selectedIce = it }
+          onIceChanged = { selectedIce = it },
+          modifier = Modifier.weight(0.65f)
         )
       }
+    } else {
+      ProductImageDisplay(
+        coffee = coffee,
+        modifier = Modifier
+          .fillMaxWidth()
+          .height(160.dp)
+      )
+      ProductOptionSection(
+        coffee = coffee,
+        countSelectAmount = countSelectAmount,
+        onCountChange = { countSelectAmount = it },
+        shotOption = shotOption,
+        selectedShot = selectedShot,
+        onShotChanged = { selectedShot = it },
+        temperatureOption = temperatureOption,
+        selectedTemperature = selectedTemperature,
+        onTemperatureChanged = { selectedTemperature = it },
+        sizeOption = sizeOption,
+        selectedSize = selectedSize,
+        onSizeChanged = { selectedSize = it },
+        iceOption = iceOption,
+        selectedIce = selectedIce,
+        onIceChanged = { selectedIce = it },
+        modifier = Modifier.weight(1f)
+      )
     }
 
-    var coffeePrice = calculateCoffeePrice(
-      coffee,
-      shotOption,
-      selectedShot,
-      sizeOption,
-      selectedSize,
-      iceOption,
-      selectedIce,
-      selectedTemperature,
-    )
-
-    DisplayPrice(coffeePrice * countSelectAmount)
-    Spacer(modifier = Modifier.height(8.dp))
-
-    val context = LocalContext.current
-    val cartFileName = getWorkingDir() + "/cart.json"
-    AddToCartButton(
-      onClick = {
+    ProductPriceAndCart(
+      totalPrice = coffeePrice * countSelectAmount,
+      onAddToCart = {
         val existingCart = CartItem.loadList(cartFileName)
         val newId = (existingCart.maxOfOrNull { it.inCartId } ?: 0) + 1
         val newItem = CartItem(
           inCartId = newId,
-          itemId = coffee.id,
-          name = coffee.name,
-          cost = kotlin.math.round(coffeePrice * 100) / 100,
-          shotInfo = selectedShot,
-          temperature = selectedTemperature,
-          size = selectedSize,
-          ice = if (selectedTemperature == "Hot") "N/A" else selectedIce,
+          option = CoffeeOption(
+            itemId = coffee.id,
+            name = coffee.name,
+            cost = kotlin.math.round(coffeePrice * 100) / 100,
+            shotInfo = selectedShot,
+            temperature = selectedTemperature,
+            size = selectedSize,
+            ice = if (selectedTemperature == "Hot") "N/A" else selectedIce
+          ),
           quantity = countSelectAmount
         )
         (existingCart + newItem).save(cartFileName)
@@ -328,6 +329,129 @@ private fun IceOption(
 }
 
 @Composable
+private fun ProductImageDisplay(
+  coffee: CoffeeItem,
+  modifier: Modifier = Modifier
+) {
+  Box(modifier = modifier) {
+    if (coffee.imageResId != -1) {
+      Image(
+        painter = painterResource(coffee.imageResId),
+        contentDescription = coffee.name,
+        modifier = Modifier.fillMaxSize(),
+        contentScale = ContentScale.FillHeight
+      )
+    } else {
+      Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.primaryContainer
+      ) {
+        Box(contentAlignment = Alignment.Center) {
+          Text(
+            text = coffee.name.first().toString(),
+            style = MaterialTheme.typography.displayLarge,
+            color = MaterialTheme.colorScheme.onPrimaryContainer
+          )
+        }
+      }
+    }
+  }
+}
+
+@Composable
+private fun ProductOptionSection(
+  coffee: CoffeeItem,
+  countSelectAmount: Int,
+  onCountChange: (Int) -> Unit,
+  shotOption: List<ChoiceOption>,
+  selectedShot: String,
+  onShotChanged: (String) -> Unit,
+  temperatureOption: List<ChoiceOption>,
+  selectedTemperature: String,
+  onTemperatureChanged: (String) -> Unit,
+  sizeOption: List<ChoiceOption>,
+  selectedSize: String,
+  onSizeChanged: (String) -> Unit,
+  iceOption: List<ChoiceOption>,
+  selectedIce: String,
+  onIceChanged: (String) -> Unit,
+  modifier: Modifier = Modifier
+) {
+  Column(
+    modifier = modifier.verticalScroll(rememberScrollState())
+  ) {
+    CoffeeAmount(
+      coffee = coffee,
+      countSelectAmount = countSelectAmount,
+      onCountChange = onCountChange
+    )
+    ShotOption(
+      shotOption = shotOption,
+      selectedShot = selectedShot,
+      onShotChanged = onShotChanged
+    )
+    TemperatureOption(
+      temperatureOption = temperatureOption,
+      selectedTemperature = selectedTemperature,
+      onTemperatureChanged = onTemperatureChanged
+    )
+    SizeOption(
+      sizeOption = sizeOption,
+      selectedSize = selectedSize,
+      onSizeChanged = onSizeChanged
+    )
+    if (selectedTemperature != "Hot") {
+      IceOption(
+        iceOption = iceOption,
+        selectedIce = selectedIce,
+        onIceChanged = onIceChanged
+      )
+    }
+  }
+}
+
+@Composable
+private fun ProductPriceAndCart(
+  totalPrice: Double,
+  onAddToCart: () -> Unit,
+  modifier: Modifier = Modifier
+) {
+  Column(modifier = modifier) {
+    Row(
+      modifier = Modifier
+        .fillMaxWidth()
+        .padding(horizontal = 16.dp, vertical = 16.dp),
+      horizontalArrangement = Arrangement.SpaceBetween,
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      Text(
+        text = "Total amount",
+        style = MaterialTheme.typography.bodyLarge,
+        fontWeight = FontWeight.Normal
+      )
+      Text(
+        text = "$%.2f".format(totalPrice),
+        style = MaterialTheme.typography.headlineSmall,
+        fontWeight = FontWeight.SemiBold
+      )
+    }
+
+    Button(
+      onClick = onAddToCart,
+      colors = ButtonDefaults.buttonColors(),
+      modifier = Modifier.fillMaxWidth()
+    ) {
+      Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
+      ) {
+        Text("Add to cart")
+      }
+    }
+  }
+}
+
+@Composable
 private fun calculateCoffeePrice(
   coffee: CoffeeItem,
   shotOption: List<ChoiceOption>,
@@ -361,43 +485,7 @@ private fun calculateCoffeePrice(
   return coffeePrice
 }
 
-@Composable
-private fun AddToCartButton(onClick: () -> Unit) {
-  Button(
-    onClick = onClick,
-    colors = ButtonDefaults.buttonColors(),
-    modifier = Modifier.fillMaxWidth()
-  ) {
-    Row(
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.Center
-    ) {
-      Text("Add to cart")
-    }
-  }
-}
 
-@Composable
-private fun DisplayPrice(coffeePrice: Double) {
-  Row(
-    modifier = Modifier
-      .fillMaxWidth()
-      .padding(16.dp),
-    horizontalArrangement = Arrangement.SpaceBetween,
-    verticalAlignment = Alignment.CenterVertically
-  ) {
-    Text(
-      text = "Total amount",
-      style = MaterialTheme.typography.bodyLarge,
-      fontWeight = FontWeight.Normal
-    )
-    Text(
-      text = "$%.2f".format(coffeePrice),
-      style = MaterialTheme.typography.headlineSmall,
-      fontWeight = FontWeight.SemiBold
-    )
-  }
-}
 
 @Composable
 fun DetailsScreen(navController: NavHostController, itemId: String?) {

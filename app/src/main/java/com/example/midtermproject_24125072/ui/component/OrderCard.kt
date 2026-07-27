@@ -34,6 +34,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,12 +43,12 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.example.midtermproject_24125072.data.CartItem
+import com.example.midtermproject_24125072.data.CoffeeOption
 import com.example.midtermproject_24125072.data.OrderItem
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
@@ -60,18 +61,18 @@ fun OrderCard(
   onSwipeComplete: () -> Unit = {},
   enableSwipe: Boolean = true,
 ) {
-  val totalCost = order.orderList.fold(0.0) { total, value ->
-    value.cost + total
+  val totalCost = order.orderList.fold(-order.discountDollars) { total, value ->
+    total + value.option.cost * value.quantity
   }
-  var expanded by remember { mutableStateOf(false) }
+  var expanded by rememberSaveable { mutableStateOf(false) }
   val rotationAngle by animateFloatAsState(
     targetValue = if (expanded) 180f else 0f,
     animationSpec = tween(durationMillis = 300),
     label = "arrowRotation"
   )
 
-  var showCompleteDialog by remember { mutableStateOf(false) }
-  var offsetX by remember { mutableStateOf(0f) }
+  var showCompleteDialog by rememberSaveable { mutableStateOf(false) }
+  var offsetX by rememberSaveable { mutableStateOf(0f) }
   var cardWidth by remember { mutableStateOf(0) }
   val thresholdFraction = 0.3f
   val completeThreshold = cardWidth * thresholdFraction
@@ -198,7 +199,7 @@ fun OrderCard(
           }
         }
         if (expanded)
-          ExpandableCartItemList(order.orderList)
+          ExpandableCartItemList(order.orderList, order.discountDollars)
       }
     }
   }
@@ -207,14 +208,9 @@ fun OrderCard(
 @Composable
 fun ExpandableCartItemList(
   items: List<CartItem>,
+  discountDollars: Double = 0.0,
   modifier: Modifier = Modifier,
 ) {
-
-  val content = buildAnnotatedString {
-    withBulletList {
-      items.map { it -> withBulletListItem { append("${it.name} : $${it.cost}x${it.quantity}") } }
-    }
-  }
   Card(
     modifier = modifier
       .fillMaxWidth(),
@@ -238,10 +234,24 @@ fun ExpandableCartItemList(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
           ) {
-            BasicInfoDisplay(item.name, item.cost, item.quantity)
+            BasicInfoDisplay(item.option.name, item.option.cost, item.quantity)
           }
           if (index < items.lastIndex) {
             Spacer(modifier = Modifier.height(8.dp))
+          }
+        }
+
+        if (discountDollars > 0) {
+          Spacer(modifier = Modifier.height(4.dp))
+          Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+          ) {
+            Text("Discount")
+            Text(
+              "-$${String.format("%.2f", discountDollars)}",
+              fontWeight = FontWeight.SemiBold
+            )
           }
         }
 
@@ -273,24 +283,28 @@ private fun OrderCardPreview() {
   val mockCartItems = listOf(
     CartItem(
       inCartId = 1,
-      itemId = "americano",
-      name = "Americano",
-      cost = 3.6,
-      shotInfo = "Double",
-      temperature = "Cold",
-      size = "Large",
-      ice = "Normal",
+      option = CoffeeOption(
+        itemId = "americano",
+        name = "Americano",
+        cost = 3.6,
+        shotInfo = "Double",
+        temperature = "Cold",
+        size = "Large",
+        ice = "Normal"
+      ),
       quantity = 2
     ),
     CartItem(
       inCartId = 2,
-      itemId = "latte",
-      name = "Latte",
-      cost = 4.2,
-      shotInfo = "Single",
-      temperature = "Hot",
-      size = "Medium",
-      ice = "No Ice",
+      option = CoffeeOption(
+        itemId = "latte",
+        name = "Latte",
+        cost = 4.2,
+        shotInfo = "Single",
+        temperature = "Hot",
+        size = "Medium",
+        ice = "No Ice"
+      ),
       quantity = 1
     )
   )
@@ -298,7 +312,8 @@ private fun OrderCardPreview() {
     id = 1,
     address = "123 Main St, City",
     orderList = mockCartItems,
-    orderTime = ZonedDateTime.now()
+    orderTime = ZonedDateTime.now(),
+    discountDollars = 0.0
   )
   OrderCard(order = mockOrder)
 }
@@ -309,24 +324,28 @@ private fun ExpandableCartItemListPreview() {
   val mockItems = listOf(
     CartItem(
       inCartId = 1,
-      itemId = "americano",
-      name = "Americano",
-      cost = 3.6,
-      shotInfo = "Double",
-      temperature = "Cold",
-      size = "Large",
-      ice = "Normal",
+      option = CoffeeOption(
+        itemId = "americano",
+        name = "Americano",
+        cost = 3.6,
+        shotInfo = "Double",
+        temperature = "Cold",
+        size = "Large",
+        ice = "Normal"
+      ),
       quantity = 2
     ),
     CartItem(
       inCartId = 2,
-      itemId = "latte",
-      name = "Latte",
-      cost = 4.2,
-      shotInfo = "Single",
-      temperature = "Hot",
-      size = "Medium",
-      ice = "No Ice",
+      option = CoffeeOption(
+        itemId = "latte",
+        name = "Latte",
+        cost = 4.2,
+        shotInfo = "Single",
+        temperature = "Hot",
+        size = "Medium",
+        ice = "No Ice"
+      ),
       quantity = 1
     )
   )

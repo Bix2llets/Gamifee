@@ -4,6 +4,8 @@ import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -26,6 +28,7 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.midtermproject_24125072.ui.screen.BottomNavItem
+import com.example.midtermproject_24125072.ui.util.LocalIsLandscape
 
 val BottomNavItems = listOf(
     BottomNavItem("home", "Home", { Icon(Icons.Outlined.Home, "Home") }),
@@ -37,11 +40,15 @@ val BottomNavItems = listOf(
 fun FloatNavigationBox(navController: NavHostController) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+    val isLandscape = LocalIsLandscape.current
+
+    val verticalPad = if (isLandscape) 4.dp else 12.dp
+    val itemHeight = if (isLandscape) 40.dp else 56.dp
 
     Row (
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 12.dp),
+            .padding(horizontal = 24.dp, vertical = verticalPad).navigationBarsPadding(),
     ) {
         Row(
             modifier = Modifier
@@ -70,7 +77,8 @@ fun FloatNavigationBox(navController: NavHostController) {
                         selectedTextColor = MaterialTheme.colorScheme.primary,
                         unselectedIconColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
                         unselectedTextColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                    )
+                    ),
+                    modifier = Modifier.height(itemHeight)
                 )
             }
         }

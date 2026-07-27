@@ -5,6 +5,9 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.time.ZonedDateTime
+import kotlin.math.min
+import kotlin.math.roundToInt
+import java.util.Random
 
 
 data class UserLoyalty(
@@ -24,18 +27,15 @@ data class UserLoyalty(
   }
 
   fun addCupBought(numberOfCups: Int, totalCost: Double): UserLoyalty {
-    val OFFSET = 5
-    val INTERVAL = 1
+    val OFFSET = 2
+    val INTERVAL = 0.5
     var newCups = numberOfCups + cupBought
     Log.d("AddCupBought", "$newCups = $numberOfCups + $cupBought")
-    val overflowTimes = (newCups / MAX_CUP_THRESHOLD).toInt()
-    newCups = newCups % MAX_CUP_THRESHOLD
-    Log.d("AddCupBought", "$newCups $overflowTimes")
 
     var ptsGainFromPayment = 0
     val validPortion = totalCost - OFFSET;
     if (validPortion <= 0) ptsGainFromPayment = 0;
-    else ptsGainFromPayment = (validPortion / INTERVAL).toInt()
+    else ptsGainFromPayment = (validPortion / INTERVAL).toInt() + 1
     var result = UserLoyalty(
       cupBought = newCups,
       loyaltyPoint = loyaltyPoint,
@@ -45,17 +45,9 @@ data class UserLoyalty(
       val purchaseCompletionEntry = RewardEntry(
         reason = "Purchase completion",
         date = ZonedDateTime.now(),
-        amount = ptsGainFromPayment
+        amount = ptsGainFromPayment * 10
       )
       result = result.addRewardHistory(purchaseCompletionEntry)
-    }
-    if (overflowTimes != 0) {
-      val overflowCompletionEntry = RewardEntry(
-        reason = "${MAX_CUP_THRESHOLD} cups reward",
-        amount = (overflowTimes * 0.1 * POINT_TO_DOLLAR_RATIO).toInt(),
-        date = ZonedDateTime.now()
-      )
-      result = result.addRewardHistory(overflowCompletionEntry)
     }
     return result
   }
@@ -66,6 +58,20 @@ data class UserLoyalty(
       loyaltyPoint = loyaltyPoint + entry.amount,
       rewardHistory = rewardHistory + entry
     )
+  }
+
+  fun isEnoughForRedeemPoint() : Boolean {
+    return cupBought >= MAX_CUP_THRESHOLD
+  }
+
+  fun addRedeemPoint() : UserLoyalty {
+    if (!isEnoughForRedeemPoint()) return this
+    val points = generateRedeemPoints()
+    return copy(cupBought = cupBought - MAX_CUP_THRESHOLD).addRewardHistory(RewardEntry(
+      date = ZonedDateTime.now(),
+      reason = "Redeemed $MAX_CUP_THRESHOLD cups",
+      amount = points
+    ))
   }
 
   companion object {
@@ -83,6 +89,24 @@ data class UserLoyalty(
     }
   }
 }
+
+data class DiscountInfo(
+  val discountDollars: Double,
+  val pointsToDeduct: Int,
+)
+
+fun calculateDiscount(orderTotal: Double, availablePoints: Int): DiscountInfo? {
+  val maxDiscount = orderTotal * DISCOUNT_PERCENT_CAP
+  if (maxDiscount < MIN_DISCOUNT_DOLLARS) return null
+
+  val maxPoints = (maxDiscount * POINT_TO_DOLLAR_RATIO).toInt()
+  val pointsToUse = min(maxPoints, availablePoints)
+  val discountRounded = (pointsToUse.toDouble() / POINT_TO_DOLLAR_RATIO * 100).toLong() / 100.0
+
+  if (discountRounded < MIN_DISCOUNT_DOLLARS) return null
+  return DiscountInfo(discountRounded, pointsToUse)
+}
+
 
 data class RewardEntry(
   val date: ZonedDateTime,
@@ -123,6 +147,13 @@ fun UserLoyalty.Companion.load(fileName: String): UserLoyalty {
   return UserLoyalty.deserialize(data)
 }
 
+fun generateRedeemPoints(): Int {
+    val gaussian = Random().nextGaussian()
+    return (gaussian * 50.0 + 400.0).roundToInt().coerceIn(200, 600)
+}
+
 const val MAX_CUP_THRESHOLD = 8;
 const val POINT_TO_DOLLAR_RATIO = 100
+const val DISCOUNT_PERCENT_CAP = 0.20
+const val MIN_DISCOUNT_DOLLARS = 0.50
 

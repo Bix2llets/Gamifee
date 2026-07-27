@@ -6,26 +6,15 @@ import java.io.File
 
 data class CartItem(
   val inCartId: Int,
-  val itemId: String,
-  val name: String,
-  val cost: Double,
-  val shotInfo: String,
-  val temperature: String,
-  val size: String,
-  val ice: String,
+  val option: CoffeeOption,
   val isChosen: Boolean = false,
   val quantity: Int = 1,
 ) {
   fun serialize(): JSONObject {
     val obj = JSONObject()
     obj.put("inCartId", inCartId)
-    obj.put("itemId", itemId)
-    obj.put("name", name)
-    obj.put("cost", cost)
-    obj.put("shotInfo", shotInfo)
-    obj.put("temperature", temperature)
-    obj.put("size", size)
-    obj.put("ice", ice)
+    obj.put("option", option.serialize())
+    obj.put("isChosen", isChosen)
     obj.put("quantity", quantity)
     return obj
   }
@@ -34,13 +23,8 @@ data class CartItem(
     fun deserialize(data: JSONObject): CartItem {
       return CartItem(
         inCartId = data.optInt("inCartId", 0),
-        itemId = data.optString("itemId", ""),
-        name = data.getString("name"),
-        cost = data.getDouble("cost"),
-        shotInfo = data.optString("shotInfo", ""),
-        temperature = data.optString("temperature", ""),
-        size = data.optString("size", ""),
-        ice = data.optString("ice", ""),
+        option = CoffeeOption.deserialize(data.getJSONObject("option")),
+        isChosen = data.optBoolean("isChosen", false),
         quantity = data.optInt("quantity", 1)
       )
     }

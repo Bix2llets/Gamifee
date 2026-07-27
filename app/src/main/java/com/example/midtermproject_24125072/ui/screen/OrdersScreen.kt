@@ -29,6 +29,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,6 +43,7 @@ import com.example.midtermproject_24125072.data.getWorkingDir
 import com.example.midtermproject_24125072.data.loadList
 import com.example.midtermproject_24125072.data.save
 import com.example.midtermproject_24125072.ui.component.OrderCard
+import com.example.midtermproject_24125072.ui.util.LocalIsLandscape
 
 
 @Composable
@@ -49,19 +51,21 @@ fun OrdersScreen(navHostController: NavHostController) {
   val context = androidx.compose.ui.platform.LocalContext.current
   val orderFileName = getWorkingDir() + "/order.json"
   var orderList by remember { mutableStateOf(mutableListOf<OrderItem>()) }
-  var selectedTabIndex by remember { mutableIntStateOf(0) }
+  var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
 
   LaunchedEffect(Unit) {
     orderList = OrderItem.loadList(orderFileName).toMutableList()
   }
 
-  val ongoingOrders = orderList.filter { !it.isCompleted }
-  val historyOrders = orderList.filter { it.isCompleted }
+  val isLandscape = LocalIsLandscape.current
+
+  val ongoingOrders = orderList.reversed().filter { !it.isCompleted }
+  val historyOrders = orderList.reversed().filter { it.isCompleted }
 
   Column(
     modifier = Modifier
       .fillMaxSize()
-      .padding(32.dp)
+      .padding(all = if (isLandscape) 16.dp else 32.dp)
   ) {
     Box(
       modifier = Modifier.fillMaxWidth(),
@@ -75,14 +79,14 @@ fun OrdersScreen(navHostController: NavHostController) {
       )
     }
 
-    Spacer(modifier = Modifier.height(20.dp))
+    Spacer(modifier = Modifier.height(if (isLandscape) 8.dp else 16.dp))
 
     TabBar(
       selectedIndex = selectedTabIndex,
       onTabSelected = { selectedTabIndex = it }
     )
 
-    Spacer(modifier = Modifier.height(12.dp))
+    Spacer(modifier = Modifier.height(if (isLandscape) 4.dp else 8.dp))
 
     AnimatedContent(
       targetState = selectedTabIndex,

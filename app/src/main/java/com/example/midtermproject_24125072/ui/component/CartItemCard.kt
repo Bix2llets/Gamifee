@@ -30,6 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,6 +47,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
 import com.example.midtermproject_24125072.R
 import com.example.midtermproject_24125072.data.CartItem
+import com.example.midtermproject_24125072.data.CoffeeOption
 import com.example.midtermproject_24125072.data.getImageResId
 import kotlin.math.roundToInt
 
@@ -57,8 +59,8 @@ fun CartItemCard(
   onQuantityChange: (Int) -> Unit,
   modifier: Modifier = Modifier
 ) {
-  var showDeleteDialog by remember { mutableStateOf(false) }
-  var offsetX by remember { mutableStateOf(0f) }
+  var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
+  var offsetX by rememberSaveable { mutableStateOf(0f) }
   var cardWidth by remember { mutableStateOf(0) }
   val thresholdFraction = 0.25f
   val deleteThreshold = cardWidth * thresholdFraction
@@ -70,7 +72,7 @@ fun CartItemCard(
         offsetX = 0f
       },
       title = { Text("Remove item") },
-      text = { Text("Remove ${item.name} from your cart?") },
+      text = { Text("Remove ${item.option.name} from your cart?") },
       confirmButton = {
         TextButton(onClick = {
           showDeleteDialog = false
@@ -155,11 +157,11 @@ fun CartItemCard(
           horizontalArrangement = Arrangement.SpaceBetween,
           modifier = Modifier.fillMaxWidth()
         ) {
-          val resId = getImageResId(item.itemId)
+          val resId = getImageResId(item.option.itemId)
           if (resId != -1) {
             Image(
               painter = painterResource(resId),
-              contentDescription = item.name,
+              contentDescription = item.option.name,
               modifier = Modifier
                 .height(64.dp)
                 .width(64.dp)
@@ -176,7 +178,7 @@ fun CartItemCard(
             ) {
 
               Text(
-                text = item.name,
+                text = item.option.name,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
               )
@@ -207,16 +209,16 @@ fun CartItemCard(
               verticalAlignment = Alignment.Bottom
             ) {
               Column {
-                DetailRow(label = "Shot", value = item.shotInfo)
+                DetailRow(label = "Shot", value = item.option.shotInfo)
                 Spacer(modifier = Modifier.height(8.dp))
-                DetailRow(label = "Heat", value = item.temperature)
+                DetailRow(label = "Heat", value = item.option.temperature)
               }
               Spacer(modifier = Modifier.width(8.dp))
               Column {
-                DetailRow(label = "Size", value = item.size)
-                if (item.temperature != "Hot") {
+                DetailRow(label = "Size", value = item.option.size)
+                if (item.option.temperature != "Hot") {
                   Spacer(modifier = Modifier.height(8.dp))
-                  DetailRow(label = "Ice", value = item.ice)
+                  DetailRow(label = "Ice", value = item.option.ice)
                 }
               }
 
@@ -227,7 +229,7 @@ fun CartItemCard(
                 verticalAlignment = Alignment.CenterVertically
               ) {
                 Text(
-                  text = "$${String.format("%.2f", item.cost * item.quantity)}",
+                  text = "$${String.format("%.2f", item.option.cost * item.quantity)}",
                   style = MaterialTheme.typography.titleMedium,
                   fontWeight = FontWeight.SemiBold,
                   color = MaterialTheme.colorScheme.primary
@@ -270,6 +272,8 @@ private fun DetailRow(label: String, value: String) {
 private fun CartItemCardPreview() {
   val mockItem = CartItem(
     inCartId = 1,
+    CoffeeOption(
+
     itemId = "americano",
     name = "Americano",
     cost = 3.6,
@@ -277,6 +281,7 @@ private fun CartItemCardPreview() {
     temperature = "Cold",
     size = "Large",
     ice = "Normal",
+    ),
     isChosen = true,
     quantity = 2
   )

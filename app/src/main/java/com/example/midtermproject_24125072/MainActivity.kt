@@ -11,7 +11,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import com.example.midtermproject_24125072.ui.theme.MidtermProject_24125072Theme
+import com.example.compose.AppTheme
 import com.example.midtermproject_24125072.ui.screen.AppMainScreen
 
 
@@ -20,7 +20,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            MidtermProject_24125072Theme {
+            AppTheme {
                 AppMainScreen()
             }
         }

@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -27,6 +27,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -35,13 +36,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.midtermproject_24125072.data.CartItem
+import com.example.midtermproject_24125072.data.CoffeeOption
 import com.example.midtermproject_24125072.data.getWorkingDir
 import com.example.midtermproject_24125072.data.loadList
 
 
 @Composable
 fun CartPreviewButton(navController: NavController){
-  var showSheet: Boolean by remember{mutableStateOf(false)}
+  var showSheet: Boolean by rememberSaveable{mutableStateOf(false)}
   var cartFileName = getWorkingDir() + "/cart.json"
   var cartItems   by remember {mutableStateOf(emptyList<CartItem>())}
 
@@ -55,7 +57,7 @@ fun CartPreviewButton(navController: NavController){
     )
   }
   if (showSheet) {
-    ItemPreview(cartItems, onDismissRequest = {showSheet = false}, onGoToCart = {navController.navigate("cart")})
+    ItemPreview(cartItems, onDismissRequest = {showSheet = false}, onGoToCart = {showSheet = !showSheet; navController.navigate("cart")})
   }
 }
 
@@ -67,22 +69,22 @@ private fun ItemPreview(cartItem: List<CartItem>, onDismissRequest: () -> Unit, 
     sheetState = rememberModalBottomSheetState()
   ) {
     Column(
-      modifier = Modifier
-        .padding(horizontal = 24.dp, vertical = 16.dp)
-        .fillMaxWidth()
+      modifier = Modifier.fillMaxWidth()
     ) {
       Text(
         text = "Cart Preview",
         style = MaterialTheme.typography.titleLarge,
-        fontWeight = FontWeight.Bold
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier.padding(horizontal = 24.dp)
       )
 
       Spacer(modifier = Modifier.height(12.dp))
 
       Column(
         modifier = Modifier
+          .weight(1f)
           .fillMaxWidth()
-          .heightIn(max = 300.dp)
+          .padding(horizontal = 24.dp)
           .verticalScroll(rememberScrollState())
       ) {
         cartItem.forEach { item ->
@@ -92,52 +94,60 @@ private fun ItemPreview(cartItem: List<CartItem>, onDismissRequest: () -> Unit, 
               .padding(vertical = 4.dp),
             horizontalArrangement = Arrangement.SpaceBetween
           ) {
-            Text("${item.name} x${item.quantity}")
+            Text("${item.option.name} x${item.quantity}")
             Text(
-              "$${String.format("%.2f", item.cost * item.quantity)}",
+              "$${String.format("%.2f", item.option.cost * item.quantity)}",
               fontWeight = FontWeight.SemiBold
             )
           }
         }
       }
 
-      Spacer(modifier = Modifier.height(12.dp))
+      val total = cartItem.sumOf { it.option.cost * it.quantity }
 
-      val total = cartItem.sumOf { it.cost * it.quantity }
-      Text(
-        text = "Total: $${String.format("%.2f", total)}",
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.Bold
-      )
-
-      Spacer(modifier = Modifier.height(16.dp))
-
-      Button(
-        onClick = onGoToCart,
-        modifier = Modifier.fillMaxWidth()
+      Column(
+        modifier = Modifier
+          .fillMaxWidth()
+          .padding(horizontal = 24.dp)
+          .padding(bottom = 16.dp)
+          .navigationBarsPadding()
       ) {
-        Text("View Full Cart")
-      }
+        Spacer(modifier = Modifier.height(16.dp))
 
-      Spacer(modifier = Modifier.height(16.dp))
+        Button(
+          onClick = onGoToCart,
+          modifier = Modifier.fillMaxWidth()
+        ) {
+          Text("View Full Cart")
+        }
+      }
     }
   }
 }
 
 private val mockCartItems = listOf(
   CartItem(
-    inCartId = 1, itemId = "americano", name = "Americano", cost = 3.6,
-    shotInfo = "Double", temperature = "Cold", size = "Large", ice = "Normal",
+    inCartId = 1,
+    option = CoffeeOption(
+      itemId = "americano", name = "Americano", cost = 3.6,
+      shotInfo = "Double", temperature = "Cold", size = "Large", ice = "Normal"
+    ),
     isChosen = true, quantity = 2
   ),
   CartItem(
-    inCartId = 2, itemId = "mocha", name = "Mocha", cost = 4.5,
-    shotInfo = "Single", temperature = "Hot", size = "Medium", ice = "N/A",
+    inCartId = 2,
+    option = CoffeeOption(
+      itemId = "mocha", name = "Mocha", cost = 4.5,
+      shotInfo = "Single", temperature = "Hot", size = "Medium", ice = "N/A"
+    ),
     isChosen = false, quantity = 1
   ),
   CartItem(
-    inCartId = 3, itemId = "flatwhite", name = "White coffee", cost = 5.0,
-    shotInfo = "Double", temperature = "Cold", size = "Small", ice = "Less",
+    inCartId = 3,
+    option = CoffeeOption(
+      itemId = "flatwhite", name = "White coffee", cost = 5.0,
+      shotInfo = "Double", temperature = "Cold", size = "Small", ice = "Less"
+    ),
     isChosen = true, quantity = 1
   )
 )

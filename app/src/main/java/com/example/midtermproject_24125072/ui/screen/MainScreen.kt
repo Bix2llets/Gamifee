@@ -4,14 +4,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.midtermproject_24125072.ui.component.FloatNavigationBox
 import com.example.midtermproject_24125072.ui.screen.OrderSuccessScreen
+import com.example.midtermproject_24125072.ui.util.LocalIsLandscape
 
 class BottomNavItem(
     val route: String,
@@ -25,15 +28,19 @@ fun AppMainScreen() {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+
     val routesWithNavBar = listOf("home", "orders", "rewards")
 
-    Scaffold(
-        bottomBar = {
-            if (currentRoute in routesWithNavBar) {
-                FloatNavigationBox(navController)
+    CompositionLocalProvider(LocalIsLandscape provides isLandscape) {
+        Scaffold(
+            bottomBar = {
+                if (currentRoute in routesWithNavBar) {
+                    FloatNavigationBox(navController)
+                }
             }
-        }
-    ) { innerPadding ->
+        ) { innerPadding ->
         Column {
             NavHost(
                 navController = navController,
@@ -52,10 +59,12 @@ fun AppMainScreen() {
                     DetailsScreen(navController, itemId)
                 }
                 composable("orderSuccess") { OrderSuccessScreen(navController) }
-    //            composable("redeem")    { RedeemScreen(navController) }
+                composable("redeem")    { RedeemScreen(navController) }
+                composable("account")   { AccountScreen(navController) }
 
             }
         }
+    }
     }
 }
 
