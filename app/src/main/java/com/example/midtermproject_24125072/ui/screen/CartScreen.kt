@@ -271,7 +271,7 @@ fun CartScreen(navController: NavController) {
                 )
               } else {
                 userLoyalty.addCupBought(
-                  chosenItems.fold(0) { r, v -> v.quantity + r },
+                  chosenItems.fold(0) { r, v -> if(v.option.cost == 0.0) 0 + r else v.quantity + r },
                   chosenItems.fold(0.0) { r, v -> v.option.cost * v.quantity + r }
                 )
               }
