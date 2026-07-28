@@ -73,9 +73,12 @@ private fun ItemPreview(
   onGoToCart: () -> Unit
 ) {
 
+  val sheetState = rememberModalBottomSheetState()
+  val scrollState = rememberScrollState()
   ModalBottomSheet(
     onDismissRequest = onDismissRequest,
-    sheetState = rememberModalBottomSheetState()
+    sheetState = sheetState,
+    dragHandle = { SwipeHintDragHandle(sheetState, scrollState) },
   ) {
     Column(
       modifier = Modifier.fillMaxWidth()
@@ -94,7 +97,7 @@ private fun ItemPreview(
           .weight(1f)
           .fillMaxWidth()
           .padding(horizontal = 24.dp)
-          .verticalScroll(rememberScrollState())
+          .verticalScroll(scrollState)
       ) {
         cartItem.forEach { item ->
           Row(

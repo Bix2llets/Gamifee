@@ -15,6 +15,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.CheckBox
+import androidx.compose.material.icons.outlined.CheckBoxOutlineBlank
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.ShoppingCart
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -59,6 +62,7 @@ import com.example.midtermproject_24125072.data.toDomain
 import com.example.midtermproject_24125072.data.toEntity
 import com.example.midtermproject_24125072.ui.component.BasicInfoDisplay
 import com.example.midtermproject_24125072.ui.component.CartItemCard
+import com.example.midtermproject_24125072.ui.component.SwipeHintDragHandle
 import com.example.midtermproject_24125072.ui.util.LocalIsLandscape
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -74,6 +78,8 @@ fun CartScreen(navController: NavController) {
   var userLoyalty by remember { mutableStateOf(UserLoyalty(0, 0, emptyList())) }
   var showOrderConfirm by rememberSaveable { mutableStateOf(false) }
 
+  var showFullDeleteAlert by rememberSaveable { mutableStateOf(false) }
+  var showToggleAlert by rememberSaveable { mutableStateOf(false) }
   LaunchedEffect(Unit) {
     cartList = database.cartItemDao().getAll().first().map { it.toDomain() }.toMutableList()
   }
@@ -88,6 +94,31 @@ fun CartScreen(navController: NavController) {
         }
       }
     }
+  }
+
+  if (showFullDeleteAlert) {
+    fullDeleteAlert(
+      onConfirm = {
+        showFullDeleteAlert = false
+        scope.launch {
+          database.cartItemDao().clearAll()
+          cartList = mutableListOf()
+        }
+      },
+      onCancel = { showFullDeleteAlert = false }
+    )
+  }
+
+  if (showToggleAlert) {
+    val haveSomeSelected = cartList.filter { it -> it.isChosen == true }.size != 0
+    toggleAlert(
+      onConfirm = {
+        showToggleAlert = false
+        cartList = cartList.map { it.copy(isChosen = !haveSomeSelected) }.toMutableList()
+      },
+      onCancel = { showToggleAlert = false },
+      haveSomeSelected = haveSomeSelected
+    )
   }
 
   val isLandscape = LocalIsLandscape.current
@@ -120,6 +151,18 @@ fun CartScreen(navController: NavController) {
         fontWeight = FontWeight.Bold,
         modifier = Modifier.align(Alignment.Center)
       )
+
+      Row(
+        modifier = Modifier.align(Alignment.CenterEnd),
+        horizontalArrangement = Arrangement.End,
+        verticalAlignment = Alignment.CenterVertically
+      ) {
+        toggleSelectButton(
+          onClick = { showToggleAlert = true },
+          cartList.filter { it -> it.isChosen == true }.size != 0
+        )
+        fullDeleteButton(onClick = { showFullDeleteAlert = true })
+      }
     }
 
     Spacer(modifier = Modifier.height(8.dp))
@@ -318,9 +361,12 @@ private fun CheckoutPanel(
     )
   }
 
+  val sheetState = rememberModalBottomSheetState()
+  val scrollState = rememberScrollState()
   ModalBottomSheet(
     onDismissRequest = onDismiss,
-    sheetState = rememberModalBottomSheetState(),
+    sheetState = sheetState,
+    dragHandle = { SwipeHintDragHandle(sheetState, scrollState) },
   ) {
     Column(
       modifier = Modifier.fillMaxWidth()
@@ -330,7 +376,7 @@ private fun CheckoutPanel(
           .weight(1f)
           .fillMaxWidth()
           .padding(horizontal = 16.dp)
-          .verticalScroll(rememberScrollState())
+          .verticalScroll(scrollState)
       ) {
         Row(
           modifier = Modifier.fillMaxWidth(),
@@ -501,4 +547,63 @@ private fun CheckoutButton(onConfirm: () -> Unit) {
     Spacer(modifier = Modifier.width(8.dp))
     Text("Place Order")
   }
+}
+
+
+@Composable
+private fun fullDeleteButton(onClick: () -> Unit = {}) {
+  IconButton(
+    onClick = onClick,
+  ) { Icon(Icons.Outlined.Delete, contentDescription = "Remove all") }
+}
+
+@Composable
+private fun toggleSelectButton(onClick: () -> Unit = {}, haveSomeSelected: Boolean) {
+  IconButton(
+    onClick = onClick,
+  ) {
+    if (haveSomeSelected) Icon(
+      Icons.Outlined.CheckBoxOutlineBlank,
+      contentDescription = "Deselect all"
+    )
+    else Icon(Icons.Outlined.CheckBox, contentDescription = "Select all")
+  }
+}
+
+@Composable
+private fun fullDeleteAlert(
+  onConfirm: () -> Unit,
+  onCancel: () -> Unit
+) {
+  AlertDialog(
+    onDismissRequest = onCancel,
+    title = { Text("Clear Cart") },
+    text = { Text("Remove all items from your cart? This action cannot be undone.") },
+    confirmButton = {
+      TextButton(onClick = onConfirm) { Text("Remove All") }
+    },
+    dismissButton = {
+      TextButton(onClick = onCancel) { Text("Cancel") }
+    }
+  )
+}
+
+@Composable
+private fun toggleAlert(
+  onConfirm: () -> Unit,
+  onCancel: () -> Unit,
+  haveSomeSelected: Boolean
+) {
+  val text = if (haveSomeSelected) "Deselect" else "Select"
+  AlertDialog(
+    onDismissRequest = onCancel,
+    title = { Text("$text All") },
+    text = { Text("$text all items in your cart?") },
+    confirmButton = {
+      TextButton(onClick = onConfirm) { Text("$text All") }
+    },
+    dismissButton = {
+      TextButton(onClick = onCancel) { Text("Cancel") }
+    }
+  )
 }
