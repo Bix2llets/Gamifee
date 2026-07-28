@@ -5,7 +5,7 @@ import androidx.compose.ui.platform.LocalContext
 
 
 @Composable
-fun getWorkingDir() : String{
+fun getWorkingDir(): String {
   val context = LocalContext.current
   return context.filesDir.absolutePath
 

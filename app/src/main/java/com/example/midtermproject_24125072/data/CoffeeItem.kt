@@ -7,11 +7,11 @@ import org.json.JSONObject
 import java.io.IOException
 
 data class CoffeeItem(
-    val name: String,
-    val price: Double,
-    val description: String,
-    val imageResId: Int,
-    val id: String
+  val name: String,
+  val price: Double,
+  val description: String,
+  val imageResId: Int,
+  val id: String
 ) {
   fun serialize(): JSONObject {
     val obj = JSONObject()
@@ -36,22 +36,22 @@ data class CoffeeItem(
   }
 }
 
-public  fun getImageResId(itemName: String): Int = when (itemName) {
-    "americano" -> R.drawable.americano
-    "cappuchino" -> R.drawable.cappuccino
-    "mocha" -> R.drawable.mocha
-    "flatwhite" -> R.drawable.flatwhite
-    else -> -1
+fun getImageResId(itemName: String): Int = when (itemName) {
+  "americano" -> R.drawable.americano
+  "cappuchino" -> R.drawable.cappuccino
+  "mocha" -> R.drawable.mocha
+  "flatwhite" -> R.drawable.flatwhite
+  else -> -1
 }
 
 fun CoffeeItem.Companion.loadList(context: Context): List<CoffeeItem> {
-    val jsonString = try {
-        context.assets.open("coffee_items.json")
-            .bufferedReader()
-            .use { it.readText() }
-    } catch (e: IOException) {
-        return emptyList()
-    }
-    val jsonArray = JSONArray(jsonString)
-    return (0 until jsonArray.length()).map { CoffeeItem.deserialize(jsonArray.getJSONObject(it)) }
+  val jsonString = try {
+    context.assets.open("coffee_items.json")
+      .bufferedReader()
+      .use { it.readText() }
+  } catch (e: IOException) {
+    return emptyList()
+  }
+  val jsonArray = JSONArray(jsonString)
+  return (0 until jsonArray.length()).map { CoffeeItem.deserialize(jsonArray.getJSONObject(it)) }
 }

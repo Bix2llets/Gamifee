@@ -24,11 +24,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -39,22 +40,26 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.midtermproject_24125072.data.OrderItem
-import com.example.midtermproject_24125072.data.getWorkingDir
-import com.example.midtermproject_24125072.data.loadList
-import com.example.midtermproject_24125072.data.save
+import com.example.midtermproject_24125072.data.local.AppDatabase
+import com.example.midtermproject_24125072.data.toDomain
 import com.example.midtermproject_24125072.ui.component.OrderCard
 import com.example.midtermproject_24125072.ui.util.LocalIsLandscape
+import kotlinx.coroutines.launch
 
 
 @Composable
 fun OrdersScreen(navHostController: NavHostController) {
   val context = androidx.compose.ui.platform.LocalContext.current
-  val orderFileName = getWorkingDir() + "/order.json"
-  var orderList by remember { mutableStateOf(mutableListOf<OrderItem>()) }
+  val database = remember { AppDatabase.getInstance(context) }
+  val scope = rememberCoroutineScope()
   var selectedTabIndex by rememberSaveable { mutableIntStateOf(0) }
 
-  LaunchedEffect(Unit) {
-    orderList = OrderItem.loadList(orderFileName).toMutableList()
+  val orderEntities by database.orderItemDao().getAllOrdersWithItems()
+    .collectAsState(initial = emptyList())
+  var orderList by remember(orderEntities) {
+    mutableStateOf(orderEntities.map { withItems ->
+      withItems.order.toDomain(withItems.items)
+    }.toMutableList())
   }
 
   val isLandscape = LocalIsLandscape.current
@@ -111,9 +116,10 @@ fun OrdersScreen(navHostController: NavHostController) {
             orderList = orderList.map {
               if (it.id == orderId) it.copy(isCompleted = true) else it
             }.toMutableList()
-            orderList.save(orderFileName)
+            scope.launch { database.orderItemDao().updateIsCompleted(orderId, true) }
           }
         )
+
         1 -> OrderList(
           orders = historyOrders,
           emptyMessage = "No order history yet",
@@ -132,11 +138,12 @@ private fun TabBar(
 ) {
   val tabLabels = listOf("On going", "History")
   val primaryColor = MaterialTheme.colorScheme.primary
-  val surfaceVariant = MaterialTheme.colorScheme.surfaceVariant
+  MaterialTheme.colorScheme.surfaceVariant
 
   Row(
     modifier = Modifier
-      .fillMaxWidth().height(64.dp),
+      .fillMaxWidth()
+      .height(64.dp),
     horizontalArrangement = Arrangement.SpaceEvenly,
   ) {
     tabLabels.forEachIndexed { index, label ->
@@ -173,16 +180,15 @@ private fun TabBar(
         )
 
         // The underline will now stick precisely to the bottom edge
-        if (isActive)
-{
-        Box(
-          modifier = Modifier
-            .align(Alignment.BottomCenter)
-            .fillMaxWidth()
-            .height(2.dp)
-            .background(MaterialTheme.colorScheme.primary)
-        )
-}
+        if (isActive) {
+          Box(
+            modifier = Modifier
+              .align(Alignment.BottomCenter)
+              .fillMaxWidth()
+              .height(2.dp)
+              .background(MaterialTheme.colorScheme.primary)
+          )
+        }
       }
     }
   }
@@ -228,6 +234,7 @@ private fun OrderList(
 fun PreviewTabBar() {
   TabBar(0, {})
 }
+
 @Preview(showBackground = true)
 @Composable
 fun PreviewTabBar1() {

@@ -2,7 +2,7 @@ package com.example.midtermproject_24125072.data
 
 import org.json.JSONObject
 
-data class CoffeeOption (
+data class CoffeeOption(
   val itemId: String,
   val name: String,
   val cost: Double,

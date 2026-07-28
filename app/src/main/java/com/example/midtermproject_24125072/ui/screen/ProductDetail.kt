@@ -1,13 +1,12 @@
 package com.example.midtermproject_24125072.ui.screen
 
-import com.example.midtermproject_24125072.R
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -26,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -36,20 +36,25 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.example.midtermproject_24125072.R
 import com.example.midtermproject_24125072.data.CartItem
 import com.example.midtermproject_24125072.data.CoffeeItem
 import com.example.midtermproject_24125072.data.CoffeeOption
-import com.example.midtermproject_24125072.data.getWorkingDir
 import com.example.midtermproject_24125072.data.loadList
-import com.example.midtermproject_24125072.data.save
+import com.example.midtermproject_24125072.data.local.AppDatabase
+import com.example.midtermproject_24125072.data.toEntity
 import com.example.midtermproject_24125072.ui.component.CartPreviewButton
 import com.example.midtermproject_24125072.ui.component.ChoiceGroup
 import com.example.midtermproject_24125072.ui.component.ChoiceOption
 import com.example.midtermproject_24125072.ui.component.Counter
 import com.example.midtermproject_24125072.ui.util.LocalIsLandscape
+import kotlinx.coroutines.launch
 
 @Composable
 fun ProductDetailScreen(navController: NavHostController, coffee: CoffeeItem) {
+  val context = LocalContext.current
+  val database = remember { AppDatabase.getInstance(context) }
+  val scope = rememberCoroutineScope()
   val isLandscape = LocalIsLandscape.current
 
   var countSelectAmount by rememberSaveable { mutableStateOf(1) }
@@ -88,8 +93,6 @@ fun ProductDetailScreen(navController: NavHostController, coffee: CoffeeItem) {
     selectedIce,
     selectedTemperature,
   )
-
-  val cartFileName = getWorkingDir() + "/cart.json"
 
   Column(
     modifier = Modifier
@@ -175,22 +178,23 @@ fun ProductDetailScreen(navController: NavHostController, coffee: CoffeeItem) {
     ProductPriceAndCart(
       totalPrice = coffeePrice * countSelectAmount,
       onAddToCart = {
-        val existingCart = CartItem.loadList(cartFileName)
-        val newId = (existingCart.maxOfOrNull { it.inCartId } ?: 0) + 1
-        val newItem = CartItem(
-          inCartId = newId,
-          option = CoffeeOption(
-            itemId = coffee.id,
-            name = coffee.name,
-            cost = kotlin.math.round(coffeePrice * 100) / 100,
-            shotInfo = selectedShot,
-            temperature = selectedTemperature,
-            size = selectedSize,
-            ice = if (selectedTemperature == "Hot") "N/A" else selectedIce
-          ),
-          quantity = countSelectAmount
-        )
-        (existingCart + newItem).save(cartFileName)
+        scope.launch {
+          val newId = database.cartItemDao().nextInCartId()
+          val entity = CartItem(
+            inCartId = newId,
+            option = CoffeeOption(
+              itemId = coffee.id,
+              name = coffee.name,
+              cost = kotlin.math.round(coffeePrice * 100) / 100,
+              shotInfo = selectedShot,
+              temperature = selectedTemperature,
+              size = selectedSize,
+              ice = if (selectedTemperature == "Hot") "N/A" else selectedIce
+            ),
+            quantity = countSelectAmount
+          ).toEntity()
+          database.cartItemDao().insert(entity)
+        }
         navController.navigate("home") {
           popUpTo(0) { inclusive = true }
         }
@@ -486,7 +490,6 @@ private fun calculateCoffeePrice(
 }
 
 
-
 @Composable
 fun DetailsScreen(navController: NavHostController, itemId: String?) {
   val context = LocalContext.current
@@ -497,9 +500,4 @@ fun DetailsScreen(navController: NavHostController, itemId: String?) {
     return
   }
   ProductDetailScreen(navController, coffee)
-}
-
-@Composable
-fun CartPreview() {
-
 }

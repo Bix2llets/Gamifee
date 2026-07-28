@@ -37,19 +37,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
-import com.example.midtermproject_24125072.R
 import com.example.midtermproject_24125072.data.CartItem
 import com.example.midtermproject_24125072.data.CoffeeOption
 import com.example.midtermproject_24125072.data.getImageResId
 import kotlin.math.roundToInt
+import com.example.midtermproject_24125072.ui.component.DetailRow
 
 @Composable
 fun CartItemCard(
@@ -205,7 +205,7 @@ fun CartItemCard(
               }
             }
             Spacer(modifier = Modifier.height(8.dp))
-            Row (
+            Row(
               verticalAlignment = Alignment.Bottom
             ) {
               Column {
@@ -249,23 +249,6 @@ fun CartItemCard(
   }
 }
 
-@Composable
-private fun DetailRow(label: String, value: String) {
-  Row(
-    verticalAlignment = Alignment.CenterVertically
-  ) {
-    Text(
-      text = "$label: ",
-      style = MaterialTheme.typography.bodySmall,
-      color = MaterialTheme.colorScheme.onSurfaceVariant
-    )
-    Text(
-      text = value,
-      style = MaterialTheme.typography.bodySmall,
-      fontWeight = FontWeight.Medium
-    )
-  }
-}
 
 @Preview(showBackground = true)
 @Composable
@@ -274,13 +257,13 @@ private fun CartItemCardPreview() {
     inCartId = 1,
     CoffeeOption(
 
-    itemId = "americano",
-    name = "Americano",
-    cost = 3.6,
-    shotInfo = "Double",
-    temperature = "Cold",
-    size = "Large",
-    ice = "Normal",
+      itemId = "americano",
+      name = "Americano",
+      cost = 3.6,
+      shotInfo = "Double",
+      temperature = "Cold",
+      size = "Large",
+      ice = "Normal",
     ),
     isChosen = true,
     quantity = 2

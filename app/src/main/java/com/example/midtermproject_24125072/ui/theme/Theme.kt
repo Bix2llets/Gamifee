@@ -14,7 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
-import com.example.ui.theme.AppTypography
+import com.example.compose.AppTypography
 
 private val lightScheme = lightColorScheme(
     primary = primaryLight,
@@ -258,12 +258,12 @@ val unspecified_scheme = ColorFamily(
 
 @Composable
 fun AppTheme(
-    darkTheme: Boolean = ThemeManager.isDarkTheme,
     dynamicColor: Boolean = false,
     content: @Composable() () -> Unit
 ) {
   val context = LocalContext.current
   remember { ThemeManager.init(context) }
+  val darkTheme = ThemeManager.isDarkTheme
 
   val colorScheme = when {
       dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {

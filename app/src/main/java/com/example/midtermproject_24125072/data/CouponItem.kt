@@ -6,7 +6,8 @@ import java.io.File
 
 data class CouponItem(
   val option: CoffeeOption,
-  val point: Int
+  val point: Int,
+  val dbId: Long = 0,
 ) {
   fun serialize(): JSONObject {
     val obj = JSONObject()
@@ -37,3 +38,19 @@ fun List<CouponItem>.save(fileName: String) {
   forEach { jsonArray.put(it.serialize()) }
   File(fileName).writeText(jsonArray.toString())
 }
+
+fun CouponItem.toEntity(): com.example.midtermproject_24125072.data.local.CouponItemEntity =
+  com.example.midtermproject_24125072.data.local.CouponItemEntity(
+    id = dbId,
+    itemId = option.itemId, name = option.name, cost = option.cost,
+    shotInfo = option.shotInfo, temperature = option.temperature,
+    size = option.size, ice = option.ice,
+    point = point
+  )
+
+fun com.example.midtermproject_24125072.data.local.CouponItemEntity.toDomain(): CouponItem =
+  CouponItem(
+    dbId = id,
+    option = CoffeeOption(itemId, name, cost, shotInfo, temperature, size, ice),
+    point = point
+  )

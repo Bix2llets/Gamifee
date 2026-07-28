@@ -16,8 +16,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.outlined.ShoppingCart
-import androidx.compose.material3.Button
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -31,14 +31,17 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -51,27 +54,40 @@ import com.example.midtermproject_24125072.data.UserInformation
 import com.example.midtermproject_24125072.data.UserLoyalty
 import com.example.midtermproject_24125072.data.calculateDiscount
 import com.example.midtermproject_24125072.data.getWorkingDir
-import com.example.midtermproject_24125072.data.load
-import com.example.midtermproject_24125072.data.loadList
-import com.example.midtermproject_24125072.data.save
+import com.example.midtermproject_24125072.data.local.AppDatabase
+import com.example.midtermproject_24125072.data.toDomain
+import com.example.midtermproject_24125072.data.toEntity
 import com.example.midtermproject_24125072.ui.component.BasicInfoDisplay
 import com.example.midtermproject_24125072.ui.component.CartItemCard
 import com.example.midtermproject_24125072.ui.util.LocalIsLandscape
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import java.time.ZonedDateTime
-import kotlin.math.max
 
 @Composable
 fun CartScreen(navController: NavController) {
+  val context = LocalContext.current
+  val database = remember { AppDatabase.getInstance(context) }
+  val scope = rememberCoroutineScope()
   val workingDir = getWorkingDir()
-  val cartFileName = "$workingDir/cart.json"
   var cartList by remember { mutableStateOf(mutableListOf<CartItem>()) }
-  val orderFileName = "$workingDir/order.json"
-  val loyaltyFileName = "$workingDir/loyalty.json"
+  var userLoyalty by remember { mutableStateOf(UserLoyalty(0, 0, emptyList())) }
   var showOrderConfirm by rememberSaveable { mutableStateOf(false) }
-  val userLoyalty = remember { UserLoyalty.load(loyaltyFileName) }
 
   LaunchedEffect(Unit) {
-    cartList = CartItem.loadList(cartFileName).toMutableList()
+    cartList = database.cartItemDao().getAll().first().map { it.toDomain() }.toMutableList()
+  }
+
+  val userInfoEntity by database.userInformationDao().getUserInfo().collectAsState(initial = null)
+  val userId = userInfoEntity?.id
+  LaunchedEffect(userId) {
+    if (userId != null) {
+      database.userLoyaltyDao().getLoyalty(userId).collect { withHistory ->
+        if (withHistory != null) {
+          userLoyalty = withHistory.loyalty.toDomain(withHistory.history)
+        }
+      }
+    }
   }
 
   val isLandscape = LocalIsLandscape.current
@@ -118,19 +134,17 @@ fun CartScreen(navController: NavController) {
           item = cartItem,
           onDelete = {
             cartList = cartList.filter { it.inCartId != cartItem.inCartId }.toMutableList()
-            cartList.save(cartFileName)
+            scope.launch { database.cartItemDao().delete(cartItem.inCartId) }
           },
           onToggleChosen = {
             cartList = cartList.map {
               if (it.inCartId == cartItem.inCartId) it.copy(isChosen = !it.isChosen) else it
             }.toMutableList()
-            cartList.save(cartFileName)
           },
           onQuantityChange = { newQty ->
             cartList = cartList.map {
               if (it.inCartId == cartItem.inCartId) it.copy(quantity = newQty) else it
             }.toMutableList()
-            cartList.save(cartFileName)
           }
         )
         Spacer(modifier = Modifier.height(12.dp))
@@ -169,36 +183,63 @@ fun CartScreen(navController: NavController) {
     }
     if (showOrderConfirm) {
       val chosenItems = cartList.filter { it.isChosen }
-      val cartList = cartList.filter { !it.isChosen }.toMutableList()
       CheckoutPanel(
         chosenItems,
         orderTotal = selectedTotal,
         userLoyalty = userLoyalty,
+        database = database,
         onDismiss = { showOrderConfirm = false },
         onConfirmation = { address, discount ->
           if (chosenItems.size != 0) {
-            cartList.save(cartFileName)
-            val orderList: List<OrderItem> = OrderItem.loadList(orderFileName)
-            val maxId = orderList.fold(0) { result, value -> max(result, value.id) }
-            val discountAmount = discount?.discountDollars ?: 0.0
-            val newOrder: OrderItem = OrderItem.create(chosenItems, maxId + 1, address, discountAmount)
-            (orderList + newOrder).save(orderFileName)
+            scope.launch {
+              val infoEntity = database.userInformationDao().getUserInfo().first()
+              if (infoEntity == null) return@launch
+              val userId = infoEntity.id
 
-            val updatedLoyalty = if (discount != null) {
-              userLoyalty.addRewardHistory(
-                RewardEntry(
-                  amount = -discount.pointsToDeduct,
-                  date = ZonedDateTime.now(),
-                  reason = "Apply discount of $${discount.discountDollars}"
+              val remaining = cartList.filter { !it.isChosen }
+              database.cartItemDao().clearAll()
+              remaining.forEach { database.cartItemDao().insert(it.toEntity()) }
+
+              val newId = database.orderItemDao().nextOrderId()
+              val discountAmount = discount?.discountDollars ?: 0.0
+              val orderEntity = OrderItem(
+                id = newId, address = address, orderList = chosenItems,
+                orderTime = ZonedDateTime.now(), discountDollars = discountAmount
+              )
+              val orderEntityDb = orderEntity.toEntity()
+              val orderItemEntities = chosenItems.mapIndexed { idx, ci ->
+                com.example.midtermproject_24125072.data.local.OrderCartItemEntity(
+                  orderId = newId, itemNumber = idx + 1,
+                  itemId = ci.option.itemId, name = ci.option.name,
+                  cost = ci.option.cost, shotInfo = ci.option.shotInfo,
+                  temperature = ci.option.temperature, size = ci.option.size,
+                  ice = ci.option.ice, quantity = ci.quantity, isChosen = ci.isChosen
                 )
-              )
-            } else {
-              userLoyalty.addCupBought(
-                newOrder.orderList.fold(0) { result, value -> value.quantity + result },
-                newOrder.orderList.fold(0.0) { result, value -> value.option.cost * value.quantity + result }
-              )
+              }
+              database.orderItemDao().checkout(orderEntityDb, orderItemEntities)
+
+              val updatedLoyalty = if (discount != null) {
+                userLoyalty.addRewardHistory(
+                  RewardEntry(
+                    amount = -discount.pointsToDeduct,
+                    date = ZonedDateTime.now(),
+                    reason = "Apply discount of $${discount.discountDollars}"
+                  )
+                )
+              } else {
+                userLoyalty.addCupBought(
+                  chosenItems.fold(0) { r, v -> v.quantity + r },
+                  chosenItems.fold(0.0) { r, v -> v.option.cost * v.quantity + r }
+                )
+              }
+              database.userLoyaltyDao().upsertLoyalty(updatedLoyalty.toEntity())
+              val newRewards = updatedLoyalty.rewardHistory.drop(userLoyalty.rewardHistory.size)
+              newRewards.forEach { r ->
+                database.userLoyaltyDao().insertReward(r.toEntity(updatedLoyalty.dbId))
+              }
+              userLoyalty = updatedLoyalty
+              cartList = remaining.toMutableList()
             }
-            updatedLoyalty.save(loyaltyFileName)
             navController.navigate("orderSuccess")
           }
         }
@@ -209,13 +250,16 @@ fun CartScreen(navController: NavController) {
 
 private val mockCartItems = listOf(
   CartItem(
-    inCartId = 1, CoffeeOption(itemId = "americano", name = "Americano", cost = 3.6,
-    shotInfo = "Double", temperature = "Cold", size = "Large", ice = "Normal"
+    inCartId = 1, CoffeeOption(
+      itemId = "americano", name = "Americano", cost = 3.6,
+      shotInfo = "Double", temperature = "Cold", size = "Large", ice = "Normal"
     ), isChosen = true, quantity = 2
   ),
   CartItem(
-    inCartId = 2, CoffeeOption(itemId = "mocha", name = "Mocha", cost = 4.5,
-    shotInfo = "Single", temperature = "Hot", size = "Medium", ice = "N/A"),
+    inCartId = 2, CoffeeOption(
+      itemId = "mocha", name = "Mocha", cost = 4.5,
+      shotInfo = "Single", temperature = "Hot", size = "Medium", ice = "N/A"
+    ),
     isChosen = false, quantity = 1
   ),
   CartItem(
@@ -233,12 +277,21 @@ private fun CheckoutPanel(
   chosenItems: List<CartItem>,
   orderTotal: Double,
   userLoyalty: UserLoyalty,
+  database: AppDatabase,
   onDismiss: () -> Unit,
   onConfirmation: (String, DiscountInfo?) -> Unit
 ) {
-  val workingDir = getWorkingDir()
-  val freshUserInfo = remember { UserInformation.load("$workingDir/user.json") }
-  var address by remember { mutableStateOf(freshUserInfo.address) }
+  var freshUserInfo by remember { mutableStateOf(UserInformation("", "", "", "", false)) }
+  var address by remember { mutableStateOf("") }
+
+  LaunchedEffect(Unit) {
+    database.userInformationDao().getUserInfo().first().let { entity ->
+      if (entity != null) {
+        freshUserInfo = entity.toDomain()
+        if (address.isEmpty()) address = freshUserInfo.address
+      }
+    }
+  }
   var isAddressModified by remember { mutableStateOf(false) }
   var useDiscount by remember { mutableStateOf(false) }
   var showDiscountAlert by remember { mutableStateOf(false) }
@@ -304,7 +357,11 @@ private fun CheckoutPanel(
 
           if (useDiscount && discountInfo != null) {
             discounted = orderTotal - discountInfo.discountDollars
-            Row(horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            Row(
+              horizontalArrangement = Arrangement.SpaceBetween,
+              verticalAlignment = Alignment.CenterVertically,
+              modifier = Modifier.fillMaxWidth()
+            ) {
 
               Text("Discount")
 
@@ -316,7 +373,11 @@ private fun CheckoutPanel(
             }
             Spacer(modifier = Modifier.height(8.dp))
           }
-          Row(horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+          Row(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+          ) {
             Text(
               "Sum"
             )

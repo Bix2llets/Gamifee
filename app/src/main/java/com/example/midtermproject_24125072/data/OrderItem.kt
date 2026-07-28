@@ -31,7 +31,12 @@ data class OrderItem(
   }
 
   companion object {
-    fun create(orderList: List<CartItem>, id: Int, address: String, discountDollars: Double = 0.0): OrderItem = OrderItem(
+    fun create(
+      orderList: List<CartItem>,
+      id: Int,
+      address: String,
+      discountDollars: Double = 0.0
+    ): OrderItem = OrderItem(
       id = id,
       address = address,
       orderList = orderList,
@@ -72,3 +77,29 @@ fun OrderItem.Companion.loadList(fileName: String): List<OrderItem> {
   val jsonArray = JSONArray(content)
   return (0 until jsonArray.length()).map { OrderItem.deserialize(jsonArray.getJSONObject(it)) }
 }
+
+fun OrderItem.toEntity(): com.example.midtermproject_24125072.data.local.OrderItemEntity =
+  com.example.midtermproject_24125072.data.local.OrderItemEntity(
+    id = id, address = address, isCompleted = isCompleted,
+    discountDollars = discountDollars,
+    orderTime = orderTime.toInstant().toEpochMilli()
+  )
+
+fun com.example.midtermproject_24125072.data.local.OrderItemEntity.toDomain(
+  cartItems: List<com.example.midtermproject_24125072.data.local.OrderCartItemEntity>
+): OrderItem =
+  OrderItem(
+    id = id, address = address,
+    orderTime = ZonedDateTime.ofInstant(
+      java.time.Instant.ofEpochMilli(orderTime), java.time.ZoneOffset.UTC
+    ),
+    isCompleted = isCompleted, discountDollars = discountDollars,
+    orderList = cartItems.map { it.toCartItem() }
+  )
+
+fun com.example.midtermproject_24125072.data.local.OrderCartItemEntity.toCartItem(): CartItem =
+  CartItem(
+    inCartId = 0,
+    option = CoffeeOption(itemId, name, cost, shotInfo, temperature, size, ice),
+    isChosen = isChosen, quantity = quantity
+  )

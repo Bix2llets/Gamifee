@@ -34,68 +34,18 @@ fun OrderSuccessScreen(navController: NavController) {
   val isLandscape = LocalIsLandscape.current
   if (!isLandscape) {
 
-  Column(
-    modifier = Modifier
-      .fillMaxSize()
-      .padding(all = 32.dp),
-    horizontalAlignment = Alignment.CenterHorizontally,
-    verticalArrangement = Arrangement.Center
-  ) {
-    Image(
-      painter = painterResource(R.drawable.takeaway),
-      contentDescription = "Order success",
-    )
-    Spacer(modifier = Modifier.height(48.dp))
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-
-      Text(
-        text = "Order success",
-        style = MaterialTheme.typography.headlineMedium,
-        fontWeight = FontWeight.Bold,
-        textAlign = TextAlign.Center
-      )
-      Spacer(modifier = Modifier.height(16.dp))
-      Text(
-        text = "Your order have been ordered successfully. \n For more details, go to \"My order\"",
-        style = MaterialTheme.typography.bodyMedium,
-        fontWeight = FontWeight.Medium,
-        textAlign = TextAlign.Center,
-        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-
-      )
-
-      Spacer(modifier = Modifier.height(32.dp))
-
-      Button(
-        onClick = {
-          navController.navigate("orders") {
-            popUpTo(0) { inclusive = true }
-          }
-        },
-        modifier = Modifier.fillMaxWidth(),
-        colors = ButtonDefaults.buttonColors(
-          containerColor = MaterialTheme.colorScheme.primary
-        )
-      ) {
-        Text("Track my orders")
-      }
-
-      Spacer(modifier = Modifier.height(12.dp))
-
-      OutlinedButton(
-        onClick = {
-          navController.navigate("home") {
-            popUpTo(0) { inclusive = true }
-          }
-        },
-        modifier = Modifier.fillMaxWidth()
-      ) {
-        Text("Back to home")
-      }
+    Column(
+      modifier = Modifier
+        .fillMaxSize()
+        .padding(all = 32.dp),
+      horizontalAlignment = Alignment.CenterHorizontally,
+      verticalArrangement = Arrangement.Center
+    ) {
+      SuccessOrderImage()
+      Spacer(modifier = Modifier.height(48.dp))
+      OrderSuccessTextBtn(navController)
     }
-  }
-  }
-  else {
+  } else {
     Row(
       modifier = Modifier
         .fillMaxSize()
@@ -103,61 +53,73 @@ fun OrderSuccessScreen(navController: NavController) {
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.Center
     ) {
-      Image(
-        painter = painterResource(R.drawable.takeaway),
-        contentDescription = "Order success",
-      )
+      SuccessOrderImage()
       Spacer(modifier = Modifier.width(48.dp))
-      Column(horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.width(IntrinsicSize.Max)) {
-
-        Text(
-          text = "Order success",
-          style = MaterialTheme.typography.headlineMedium,
-          fontWeight = FontWeight.Bold,
-          textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(
-          text = "Your order have been ordered successfully. \n For more details, go to \"My order\"",
-          style = MaterialTheme.typography.bodyMedium,
-          fontWeight = FontWeight.Medium,
-          textAlign = TextAlign.Center,
-          color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-
-        )
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        Button(
-          onClick = {
-            navController.navigate("orders") {
-              popUpTo(0) { inclusive = true }
-            }
-          },
-          modifier = Modifier.fillMaxWidth(),
-          colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primary
-          )
-        ) {
-          Text("Track my orders")
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        OutlinedButton(
-          onClick = {
-            navController.navigate("home") {
-              popUpTo(0) { inclusive = true }
-            }
-          },
-          modifier = Modifier.fillMaxWidth()
-        ) {
-          Text("Back to home")
-        }
-      }
+      OrderSuccessTextBtn(navController)
     }
   }
+}
+
+@Composable
+private fun OrderSuccessTextBtn(navController: NavController) {
+  Column(
+    horizontalAlignment = Alignment.CenterHorizontally,
+    modifier = Modifier.width(IntrinsicSize.Max)
+  ) {
+
+    Text(
+      text = "Order success",
+      style = MaterialTheme.typography.headlineMedium,
+      fontWeight = FontWeight.Bold,
+      textAlign = TextAlign.Center
+    )
+    Spacer(modifier = Modifier.height(16.dp))
+    Text(
+      text = "Your order have been ordered successfully. \n For more details, go to \"My order\"",
+      style = MaterialTheme.typography.bodyMedium,
+      fontWeight = FontWeight.Medium,
+      textAlign = TextAlign.Center,
+      color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+
+    )
+
+    Spacer(modifier = Modifier.height(32.dp))
+
+    Button(
+      onClick = {
+        navController.navigate("orders") {
+          popUpTo(0) { inclusive = true }
+        }
+      },
+      modifier = Modifier.fillMaxWidth(),
+      colors = ButtonDefaults.buttonColors(
+        containerColor = MaterialTheme.colorScheme.primary
+      )
+    ) {
+      Text("Track my orders")
+    }
+
+    Spacer(modifier = Modifier.height(12.dp))
+
+    OutlinedButton(
+      onClick = {
+        navController.navigate("home") {
+          popUpTo(0) { inclusive = true }
+        }
+      },
+      modifier = Modifier.fillMaxWidth()
+    ) {
+      Text("Back to home")
+    }
+  }
+}
+
+@Composable
+private fun SuccessOrderImage() {
+  Image(
+    painter = painterResource(R.drawable.takeaway),
+    contentDescription = "Order success",
+  )
 }
 
 @Preview(showBackground = true, showSystemUi = true)

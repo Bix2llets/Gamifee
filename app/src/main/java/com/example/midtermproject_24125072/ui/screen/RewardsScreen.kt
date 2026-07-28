@@ -2,7 +2,6 @@ package com.example.midtermproject_24125072.ui.screen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -24,41 +24,76 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.modifier.modifierLocalConsumer
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import java.time.format.DateTimeFormatter
 import com.example.midtermproject_24125072.data.MAX_CUP_THRESHOLD
 import com.example.midtermproject_24125072.data.RewardEntry
 import com.example.midtermproject_24125072.data.UserLoyalty
 import com.example.midtermproject_24125072.data.getWorkingDir
 import com.example.midtermproject_24125072.data.load
-import com.example.midtermproject_24125072.data.save
+import com.example.midtermproject_24125072.data.local.AppDatabase
+import com.example.midtermproject_24125072.data.toDomain
+import com.example.midtermproject_24125072.data.toEntity
 import com.example.midtermproject_24125072.ui.component.LoyaltyCard
 import com.example.midtermproject_24125072.ui.util.LocalIsLandscape
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 
 
 @Composable
 fun RewardsScreen(navHostController: NavHostController) {
+  val context = LocalContext.current
+  val database = remember { AppDatabase.getInstance(context) }
+  val scope = rememberCoroutineScope()
   val workingDir = getWorkingDir()
-  var loyalty by remember { mutableStateOf(UserLoyalty.load("$workingDir/loyalty.json")) }
+  var loyalty by remember { mutableStateOf(UserLoyalty(0, 0, emptyList())) }
   var redeemed by remember { mutableStateOf(false) }
   var earnedPoints by remember { mutableStateOf(0) }
 
+  val userInfoEntity by database.userInformationDao().getUserInfo().collectAsState(initial = null)
+
+  val userId = userInfoEntity?.id
+  LaunchedEffect(userId) {
+    if (userId != null) {
+      database.userLoyaltyDao().getLoyalty(userId).collect { withHistory ->
+        if (withHistory != null) {
+          loyalty = withHistory.loyalty.toDomain(withHistory.history)
+        }
+      }
+    }
+  }
+
+  LaunchedEffect(Unit) {
+    if (database.userInformationDao().getUserInfo().first() == null) {
+      val jsonLoyalty = UserLoyalty.load("$workingDir/loyalty.json")
+      loyalty = jsonLoyalty
+    }
+  }
+
   val redeemAction: () -> Unit = {
     val updated = loyalty.addRedeemPoint()
-    updated.save("$workingDir/loyalty.json")
-    earnedPoints = updated.loyaltyPoint - loyalty.loyaltyPoint
+    val newReward = updated.rewardHistory.last()
+    scope.launch {
+      if (userInfoEntity != null) {
+        database.userLoyaltyDao().upsertLoyalty(updated.toEntity())
+        database.userLoyaltyDao().insertReward(newReward.toEntity(updated.dbId))
+      }
+    }
+    earnedPoints = newReward.amount
     loyalty = updated
     redeemed = true
   }
@@ -161,7 +196,9 @@ fun RewardsScreen(navHostController: NavHostController) {
 fun PointCard(point: Int, onRedeemClick: () -> Unit = {}, vertical: Boolean = false) {
   if (vertical) {
     Card(
-      modifier = Modifier.padding(vertical = 4.dp, horizontal = 2.dp).fillMaxHeight(),
+      modifier = Modifier
+        .padding(vertical = 4.dp, horizontal = 2.dp)
+        .fillMaxHeight(),
       shape = RoundedCornerShape(12.dp),
       colors = CardDefaults.cardColors(
         containerColor = MaterialTheme.colorScheme.primary
@@ -170,11 +207,13 @@ fun PointCard(point: Int, onRedeemClick: () -> Unit = {}, vertical: Boolean = fa
       Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween,
-        modifier = Modifier.padding(16.dp).fillMaxHeight()
+        modifier = Modifier
+          .padding(16.dp)
+          .fillMaxHeight()
       ) {
         Column(
           horizontalAlignment = Alignment.CenterHorizontally,
-          verticalArrangement =  Arrangement.SpaceBetween
+          verticalArrangement = Arrangement.SpaceBetween
         ) {
           Text("My point", style = MaterialTheme.typography.bodyMedium)
           Spacer(Modifier.height(8.dp))
@@ -289,6 +328,7 @@ fun PreviewPointCardHori() {
 fun PreviewPointCardVert() {
   PointCard(6767, {}, true)
 }
+
 @Preview(showBackground = true)
 @Composable
 fun PreviewRewardHistoryCard() {
@@ -305,6 +345,6 @@ fun PreviewRewardHistoryCard() {
     )
   )
   Column {
-    rewardEntries.forEach { it -> RewardHistoryCard(it) }
+    rewardEntries.forEach { RewardHistoryCard(it) }
   }
 }

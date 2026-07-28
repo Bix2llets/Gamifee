@@ -4,9 +4,8 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,7 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -244,7 +243,9 @@ fun ExpandableCartItemList(
         if (discountDollars > 0) {
           Spacer(modifier = Modifier.height(4.dp))
           Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+            modifier = Modifier
+              .fillMaxWidth()
+              .padding(vertical = 4.dp),
             horizontalArrangement = Arrangement.SpaceBetween
           ) {
             Text("Discount")
@@ -262,7 +263,7 @@ fun ExpandableCartItemList(
 }
 
 @Composable
- fun BasicInfoDisplay(name: String, unitPrice: Double, quantity: Int) {
+fun BasicInfoDisplay(name: String, unitPrice: Double, quantity: Int) {
   Row(
     modifier = Modifier
       .fillMaxWidth()

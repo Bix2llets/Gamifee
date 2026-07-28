@@ -42,3 +42,15 @@ data class UserInformation(
     }
   }
 }
+
+fun UserInformation.toEntity(): com.example.midtermproject_24125072.data.local.UserInformationEntity =
+  com.example.midtermproject_24125072.data.local.UserInformationEntity(
+    name = name, address = address, phoneNumber = phoneNumber,
+    email = email, haveAvatar = haveAvatar
+  )
+
+fun com.example.midtermproject_24125072.data.local.UserInformationEntity.toDomain(): UserInformation =
+  UserInformation(
+    name = name, address = address, phoneNumber = phoneNumber,
+    email = email, haveAvatar = haveAvatar
+  )

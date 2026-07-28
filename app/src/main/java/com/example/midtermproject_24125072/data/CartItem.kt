@@ -48,3 +48,19 @@ fun CartItem.Companion.loadList(fileName: String): List<CartItem> {
   return (0 until jsonArray.length()).map { CartItem.deserialize(jsonArray.getJSONObject(it)) }
 }
 
+fun CartItem.toEntity(): com.example.midtermproject_24125072.data.local.CartItemEntity =
+  com.example.midtermproject_24125072.data.local.CartItemEntity(
+    inCartId = inCartId,
+    itemId = option.itemId, name = option.name, cost = option.cost,
+    shotInfo = option.shotInfo, temperature = option.temperature,
+    size = option.size, ice = option.ice,
+    isChosen = isChosen, quantity = quantity
+  )
+
+fun com.example.midtermproject_24125072.data.local.CartItemEntity.toDomain(): CartItem =
+  CartItem(
+    inCartId = inCartId,
+    option = CoffeeOption(itemId, name, cost, shotInfo, temperature, size, ice),
+    isChosen = isChosen, quantity = quantity
+  )
+

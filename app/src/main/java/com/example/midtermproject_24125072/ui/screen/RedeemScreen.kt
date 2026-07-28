@@ -3,7 +3,6 @@ package com.example.midtermproject_24125072.ui.screen
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,9 +20,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,13 +39,14 @@ import com.example.midtermproject_24125072.data.CouponItem
 import com.example.midtermproject_24125072.data.POINT_TO_DOLLAR_RATIO
 import com.example.midtermproject_24125072.data.RewardEntry
 import com.example.midtermproject_24125072.data.UserLoyalty
-import com.example.midtermproject_24125072.data.getWorkingDir
-import com.example.midtermproject_24125072.data.load
 import com.example.midtermproject_24125072.data.loadList
-import com.example.midtermproject_24125072.data.save
+import com.example.midtermproject_24125072.data.local.AppDatabase
+import com.example.midtermproject_24125072.data.toDomain
+import com.example.midtermproject_24125072.data.toEntity
 import com.example.midtermproject_24125072.ui.component.CouponCard
 import com.example.midtermproject_24125072.ui.util.LocalIsLandscape
-import java.io.File
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import java.time.ZonedDateTime
 import java.util.Random
 import kotlin.math.roundToInt
@@ -62,42 +64,44 @@ private const val MAX_COUPONS =
 @Composable
 fun RedeemScreen(navController: NavController) {
   val context = LocalContext.current
-  val workingDir = getWorkingDir()
-  val couponFileName = "$workingDir/coupons.json"
-  val loyaltyFileName = "$workingDir/loyalty.json"
-  val cartFileName = "$workingDir/cart.json"
+  val database = remember { AppDatabase.getInstance(context) }
+  val scope = rememberCoroutineScope()
   val coffeeList = remember { CoffeeItem.loadList(context) }
   val isLandscape = LocalIsLandscape.current
 
-  var coupons by remember { mutableStateOf(mutableListOf<CouponItem>()) }
-  var userLoyalty by remember { mutableStateOf(UserLoyalty.load(loyaltyFileName)) }
+  var userLoyalty by remember { mutableStateOf(UserLoyalty(0, 0, emptyList())) }
   var redeemingCoupon by remember { mutableStateOf<CouponItem?>(null) }
   var remainingSeconds by remember { mutableStateOf(0) }
+
+  val couponEntities by database.couponItemDao().getAll().collectAsState(initial = emptyList())
+  var coupons by remember(couponEntities) {
+    mutableStateOf(couponEntities.map { it.toDomain() }.toMutableList())
+  }
+
+  val userInfoEntity by database.userInformationDao().getUserInfo().collectAsState(initial = null)
+  val userId = userInfoEntity?.id
+  LaunchedEffect(userId) {
+    if (userId != null) {
+      database.userLoyaltyDao().getLoyalty(userId).collect { withHistory ->
+        if (withHistory != null) {
+          userLoyalty = withHistory.loyalty.toDomain(withHistory.history)
+        }
+      }
+    }
+  }
 
   val rand = remember { Random() }
 
   LaunchedEffect(Unit) {
-    val now = ZonedDateTime.now()
-    val couponFile = File(couponFileName)
-
-    if (couponFile.exists()) {
-      val lastModified = ZonedDateTime.ofInstant(
-        java.time.Instant.ofEpochMilli(couponFile.lastModified()),
-        now.zone
-      )
-      if (lastModified.dayOfYear == now.dayOfYear && lastModified.year == now.year) {
-        coupons = CouponItem.loadList(couponFileName).takeLast(MAX_COUPONS).toMutableList()
-      }
-    }
-
-    if (coupons.isEmpty()) {
+    if (database.couponItemDao().getAll().first().isEmpty()) {
       val newCoupons = (1..GENERATION_COUNT).map { generateRandomCoupon(coffeeList, rand) }
-      coupons = newCoupons.toMutableList()
-      coupons.save(couponFileName)
+      newCoupons.forEach { database.couponItemDao().insert(it.toEntity()) }
     }
+  }
 
-    var lastGenerationTick = (now.hour * 60 + now.minute) / 5
-    var lastGenerationDay = now.dayOfYear
+  LaunchedEffect(Unit) {
+    var lastGenerationTick = (ZonedDateTime.now().hour * 60 + ZonedDateTime.now().minute) / 5
+    var lastGenerationDay = ZonedDateTime.now().dayOfYear
 
     while (true) {
       kotlinx.coroutines.delay(CHECK_INTERVAL_MS)
@@ -116,16 +120,14 @@ fun RedeemScreen(navController: NavController) {
         bucketStart + bucketSize + TRIGGER_SECOND - currentSecOfDay
 
       if (currentDay != lastGenerationDay) {
-        coupons = mutableListOf()
-        coupons.save(couponFileName)
+        database.couponItemDao().deleteAll()
         lastGenerationDay = currentDay
         lastGenerationTick = -1
       }
 
       if (tick != lastGenerationTick && current.second == TRIGGER_SECOND && minuteOfDay % 5 == 0) {
         val newCoupons = (1..GENERATION_COUNT).map { generateRandomCoupon(coffeeList, rand) }
-        coupons = (coupons + newCoupons).takeLast(MAX_COUPONS).toMutableList()
-        coupons.save(couponFileName)
+        newCoupons.forEach { database.couponItemDao().insert(it.toEntity()) }
         lastGenerationTick = tick
       }
     }
@@ -226,9 +228,29 @@ fun RedeemScreen(navController: NavController) {
         },
         dismissButton = {
           TextButton(onClick = {
-            redeemCoupon(coupon, userLoyalty, couponFileName, loyaltyFileName, cartFileName)
-            coupons = coupons.filter { it !== coupon }.toMutableList()
-            userLoyalty = UserLoyalty.load(loyaltyFileName)
+            val entry = RewardEntry(
+              amount = -coupon.point,
+              reason = "Coupon conversion",
+              date = ZonedDateTime.now()
+            )
+            val updatedLoyalty = userLoyalty.addRewardHistory(entry)
+            scope.launch {
+              if (userInfoEntity != null) {
+                database.userLoyaltyDao()
+                  .upsertLoyalty(updatedLoyalty.toEntity())
+                database.userLoyaltyDao().insertReward(entry.toEntity(updatedLoyalty.dbId))
+                database.couponItemDao().deleteById(coupon.dbId)
+                val newId = database.cartItemDao().nextInCartId()
+                val cartItem = CartItem(
+                  inCartId = newId,
+                  option = coupon.option.copy(cost = 0.0),
+                  isChosen = false, quantity = 1
+                )
+                database.cartItemDao().insert(cartItem.toEntity())
+              }
+            }
+            coupons = coupons.filter { it.dbId != coupon.dbId }.toMutableList()
+            userLoyalty = updatedLoyalty
             redeemingCoupon = null
           }) {
             Text("Proceed")
@@ -242,32 +264,6 @@ fun RedeemScreen(navController: NavController) {
       )
     }
   }
-}
-
-private fun redeemCoupon(
-  coupon: CouponItem,
-  userLoyalty: UserLoyalty,
-  couponFileName: String,
-  loyaltyFileName: String,
-  cartFileName: String
-) {
-  val entry = RewardEntry(
-    amount = -coupon.point,
-    reason = "Coupon conversion",
-    date = ZonedDateTime.now()
-  )
-  val updatedLoyalty = userLoyalty.addRewardHistory(entry)
-  updatedLoyalty.save(loyaltyFileName)
-
-  val newCartItem = CartItem(
-    inCartId = (CartItem.loadList(cartFileName).maxOfOrNull { it.inCartId } ?: 0) + 1,
-    option = coupon.option.copy(cost = 0.0),
-    isChosen = false,
-    quantity = 1
-  )
-  val cart = CartItem.loadList(cartFileName).toMutableList()
-  cart.add(newCartItem)
-  cart.save(cartFileName)
 }
 
 private fun generateRandomCoupon(

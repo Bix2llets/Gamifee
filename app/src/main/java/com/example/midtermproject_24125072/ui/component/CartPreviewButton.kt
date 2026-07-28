@@ -37,32 +37,41 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.midtermproject_24125072.data.CartItem
 import com.example.midtermproject_24125072.data.CoffeeOption
-import com.example.midtermproject_24125072.data.getWorkingDir
-import com.example.midtermproject_24125072.data.loadList
+import com.example.midtermproject_24125072.data.local.AppDatabase
+import com.example.midtermproject_24125072.data.toDomain
+import kotlinx.coroutines.flow.first
 
 
 @Composable
-fun CartPreviewButton(navController: NavController){
-  var showSheet: Boolean by rememberSaveable{mutableStateOf(false)}
-  var cartFileName = getWorkingDir() + "/cart.json"
-  var cartItems   by remember {mutableStateOf(emptyList<CartItem>())}
+fun CartPreviewButton(navController: NavController) {
+  val context = LocalContext.current
+  val database = remember { AppDatabase.getInstance(context) }
+  var showSheet: Boolean by rememberSaveable { mutableStateOf(false) }
+  var cartItems by remember { mutableStateOf(emptyList<CartItem>()) }
 
   LaunchedEffect(Unit) {
-    cartItems = CartItem.loadList(cartFileName)
+    cartItems = database.cartItemDao().getAll().first().map { it.toDomain() }
   }
-  IconButton(onClick = {showSheet = !showSheet}) {
+  IconButton(onClick = { showSheet = !showSheet }) {
     Icon(
       imageVector = Icons.Outlined.ShoppingCart,
       contentDescription = "Your Cart"
     )
   }
   if (showSheet) {
-    ItemPreview(cartItems, onDismissRequest = {showSheet = false}, onGoToCart = {showSheet = !showSheet; navController.navigate("cart")})
+    ItemPreview(
+      cartItems,
+      onDismissRequest = { showSheet = false },
+      onGoToCart = { showSheet = !showSheet; navController.navigate("cart") })
   }
 }
 
 @Composable
-private fun ItemPreview(cartItem: List<CartItem>, onDismissRequest: () -> Unit, onGoToCart: () -> Unit) {
+private fun ItemPreview(
+  cartItem: List<CartItem>,
+  onDismissRequest: () -> Unit,
+  onGoToCart: () -> Unit
+) {
 
   ModalBottomSheet(
     onDismissRequest = onDismissRequest,
@@ -103,7 +112,7 @@ private fun ItemPreview(cartItem: List<CartItem>, onDismissRequest: () -> Unit, 
         }
       }
 
-      val total = cartItem.sumOf { it.option.cost * it.quantity }
+      cartItem.sumOf { it.option.cost * it.quantity }
 
       Column(
         modifier = Modifier

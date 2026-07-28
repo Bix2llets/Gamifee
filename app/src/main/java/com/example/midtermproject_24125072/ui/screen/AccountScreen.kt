@@ -31,31 +31,56 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.compose.ThemeManager
 import com.example.midtermproject_24125072.data.UserInformation
 import com.example.midtermproject_24125072.data.getWorkingDir
-import com.example.compose.ThemeManager
+import com.example.midtermproject_24125072.data.local.AppDatabase
+import com.example.midtermproject_24125072.data.toDomain
+import com.example.midtermproject_24125072.data.toEntity
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 @Composable
 fun AccountScreen(navController: NavController) {
   val context = LocalContext.current
+  val database = remember { AppDatabase.getInstance(context) }
+  val scope = rememberCoroutineScope()
   val workingDir = getWorkingDir()
-  val userFileName = "$workingDir/user.json"
   val avatarFileName = "$workingDir/avatar.png"
-  var userInfo by remember { mutableStateOf(UserInformation.load(userFileName)) }
+  var userInfo by remember { mutableStateOf(UserInformation("", "", "", "", false)) }
   var avatarRefreshKey by remember { mutableStateOf(0) }
+
+  val userInfoEntity by database.userInformationDao().getUserInfo().collectAsState(initial = null)
+
+  LaunchedEffect(Unit) {
+    database.userInformationDao().getUserInfo().first().let { entity ->
+      if (entity != null) {
+        userInfo = entity.toDomain()
+      } else {
+        val jsonInfo = UserInformation.load("$workingDir/user.json")
+        val savedEntity = jsonInfo.toEntity()
+        val id = database.userInformationDao().nextId()
+        database.userInformationDao().upsertInfo(savedEntity.copy(id = id))
+        userInfo = jsonInfo
+      }
+    }
+  }
 
   val galleryLauncher = rememberLauncherForActivityResult(
     contract = ActivityResultContracts.GetContent()
@@ -68,9 +93,15 @@ fun AccountScreen(navController: NavController) {
           }
         }
         userInfo = userInfo.copy(haveAvatar = true)
-        userInfo.save(userFileName)
+        scope.launch {
+          val entity = userInfoEntity
+          if (entity != null) {
+            database.userInformationDao().upsertInfo(entity.copy(haveAvatar = true))
+          }
+        }
         avatarRefreshKey++
-      } catch (_: Exception) { }
+      } catch (_: Exception) {
+      }
     }
   }
 
@@ -150,7 +181,10 @@ fun AccountScreen(navController: NavController) {
         validate = { true },
         onValidValue = {
           userInfo = userInfo.copy(name = it)
-          userInfo.save(userFileName)
+          scope.launch {
+            val entity = userInfoEntity
+            if (entity != null) database.userInformationDao().upsertInfo(entity.copy(name = it))
+          }
         }
       )
       Spacer(modifier = Modifier.height(16.dp))
@@ -160,7 +194,10 @@ fun AccountScreen(navController: NavController) {
         validate = { true },
         onValidValue = {
           userInfo = userInfo.copy(address = it)
-          userInfo.save(userFileName)
+          scope.launch {
+            val entity = userInfoEntity
+            if (entity != null) database.userInformationDao().upsertInfo(entity.copy(address = it))
+          }
         }
       )
       Spacer(modifier = Modifier.height(16.dp))
@@ -170,7 +207,11 @@ fun AccountScreen(navController: NavController) {
         validate = { it.isBlank() || Patterns.PHONE.matcher(it).matches() },
         onValidValue = {
           userInfo = userInfo.copy(phoneNumber = it)
-          userInfo.save(userFileName)
+          scope.launch {
+            val entity = userInfoEntity
+            if (entity != null) database.userInformationDao()
+              .upsertInfo(entity.copy(phoneNumber = it))
+          }
         }
       )
       Spacer(modifier = Modifier.height(16.dp))
@@ -180,13 +221,18 @@ fun AccountScreen(navController: NavController) {
         validate = { it.isBlank() || Patterns.EMAIL_ADDRESS.matcher(it).matches() },
         onValidValue = {
           userInfo = userInfo.copy(email = it)
-          userInfo.save(userFileName)
+          scope.launch {
+            val entity = userInfoEntity
+            if (entity != null) database.userInformationDao().upsertInfo(entity.copy(email = it))
+          }
         }
       )
 
       Spacer(modifier = Modifier.height(24.dp))
       Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+        modifier = Modifier
+          .fillMaxWidth()
+          .padding(horizontal = 4.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
       ) {
@@ -210,7 +256,7 @@ private fun EditableField(
   validate: (String) -> Boolean,
   onValidValue: (String) -> Unit,
 ) {
-  var text by remember { mutableStateOf(initialValue) }
+  var text by remember(initialValue) { mutableStateOf(initialValue) }
   var isError by remember { mutableStateOf(false) }
   var isFocused by remember { mutableStateOf(false) }
 

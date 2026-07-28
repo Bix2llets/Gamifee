@@ -5,23 +5,24 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import java.time.ZonedDateTime
+import java.util.Random
 import kotlin.math.min
 import kotlin.math.roundToInt
-import java.util.Random
 
 
 data class UserLoyalty(
   val cupBought: Int,
   val loyaltyPoint: Int,
   val rewardHistory: List<RewardEntry>,
-
+  val dbId: Long = 0,
+  val userId: Long = 0,
   ) {
   fun serialize(): JSONObject {
-    var result: JSONObject = JSONObject();
+    var result: JSONObject = JSONObject()
     result.put("cupBought", cupBought)
     result.put("loyaltyPoint", loyaltyPoint)
-    var rewardSerialized = JSONArray();
-    rewardHistory.forEach { it -> rewardSerialized.put(it.serialize()) }
+    var rewardSerialized = JSONArray()
+    rewardHistory.forEach { rewardSerialized.put(it.serialize()) }
     result.put("rewardHistory", rewardSerialized)
     return result
   }
@@ -33,14 +34,10 @@ data class UserLoyalty(
     Log.d("AddCupBought", "$newCups = $numberOfCups + $cupBought")
 
     var ptsGainFromPayment = 0
-    val validPortion = totalCost - OFFSET;
-    if (validPortion <= 0) ptsGainFromPayment = 0;
+    val validPortion = totalCost - OFFSET
+    if (validPortion <= 0) ptsGainFromPayment = 0
     else ptsGainFromPayment = (validPortion / INTERVAL).toInt() + 1
-    var result = UserLoyalty(
-      cupBought = newCups,
-      loyaltyPoint = loyaltyPoint,
-      rewardHistory = rewardHistory
-    )
+    var result = copy(cupBought = newCups)
     if (ptsGainFromPayment > 0) {
       val purchaseCompletionEntry = RewardEntry(
         reason = "Purchase completion",
@@ -53,25 +50,26 @@ data class UserLoyalty(
   }
 
   fun addRewardHistory(entry: RewardEntry): UserLoyalty {
-    return UserLoyalty(
-      cupBought = cupBought,
+    return copy(
       loyaltyPoint = loyaltyPoint + entry.amount,
       rewardHistory = rewardHistory + entry
     )
   }
 
-  fun isEnoughForRedeemPoint() : Boolean {
+  fun isEnoughForRedeemPoint(): Boolean {
     return cupBought >= MAX_CUP_THRESHOLD
   }
 
-  fun addRedeemPoint() : UserLoyalty {
+  fun addRedeemPoint(): UserLoyalty {
     if (!isEnoughForRedeemPoint()) return this
     val points = generateRedeemPoints()
-    return copy(cupBought = cupBought - MAX_CUP_THRESHOLD).addRewardHistory(RewardEntry(
-      date = ZonedDateTime.now(),
-      reason = "Redeemed $MAX_CUP_THRESHOLD cups",
-      amount = points
-    ))
+    return copy(cupBought = cupBought - MAX_CUP_THRESHOLD).addRewardHistory(
+      RewardEntry(
+        date = ZonedDateTime.now(),
+        reason = "Redeemed $MAX_CUP_THRESHOLD cups",
+        amount = points
+      )
+    )
   }
 
   companion object {
@@ -115,12 +113,12 @@ data class RewardEntry(
 ) {
 
   fun serialize(): JSONObject {
-    var result = JSONObject();
+    var result = JSONObject()
     result.put("date", date.toString())
     result.put("reason", reason)
     result.put("amount", amount)
 
-    return result;
+    return result
   }
 
   companion object {
@@ -147,12 +145,38 @@ fun UserLoyalty.Companion.load(fileName: String): UserLoyalty {
   return UserLoyalty.deserialize(data)
 }
 
+fun UserLoyalty.toEntity(userId: Long = this.userId): com.example.midtermproject_24125072.data.local.UserLoyaltyEntity =
+  com.example.midtermproject_24125072.data.local.UserLoyaltyEntity(
+    id = dbId, userId = userId, cupBought = cupBought, loyaltyPoint = loyaltyPoint
+  )
+
+fun com.example.midtermproject_24125072.data.local.UserLoyaltyEntity.toDomain(
+  rewardEntries: List<com.example.midtermproject_24125072.data.local.RewardEntryEntity>
+): UserLoyalty =
+  UserLoyalty(
+    dbId = id, userId = userId, cupBought = cupBought, loyaltyPoint = loyaltyPoint,
+    rewardHistory = rewardEntries.map {
+      RewardEntry(
+        date = ZonedDateTime.ofInstant(
+          java.time.Instant.ofEpochMilli(it.date), java.time.ZoneOffset.UTC
+        ),
+        reason = it.reason, amount = it.amount
+      )
+    }
+  )
+
+fun RewardEntry.toEntity(loyaltyId: Long): com.example.midtermproject_24125072.data.local.RewardEntryEntity =
+  com.example.midtermproject_24125072.data.local.RewardEntryEntity(
+    loyaltyId = loyaltyId, date = date.toInstant().toEpochMilli(),
+    reason = reason, amount = amount
+  )
+
 fun generateRedeemPoints(): Int {
-    val gaussian = Random().nextGaussian()
-    return (gaussian * 50.0 + 400.0).roundToInt().coerceIn(200, 600)
+  val gaussian = Random().nextGaussian()
+  return (gaussian * 50.0 + 400.0).roundToInt().coerceIn(200, 600)
 }
 
-const val MAX_CUP_THRESHOLD = 8;
+const val MAX_CUP_THRESHOLD = 8
 const val POINT_TO_DOLLAR_RATIO = 100
 const val DISCOUNT_PERCENT_CAP = 0.20
 const val MIN_DISCOUNT_DOLLARS = 0.50
