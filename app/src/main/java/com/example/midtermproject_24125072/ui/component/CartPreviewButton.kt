@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ShoppingCart
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -115,7 +116,19 @@ private fun ItemPreview(
         }
       }
 
-      cartItem.sumOf { it.option.cost * it.quantity }
+      val total = cartItem.sumOf { it.option.cost * it.quantity }
+
+      HorizontalDivider(modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp))
+
+      Row(
+        modifier = Modifier
+          .fillMaxWidth()
+          .padding(horizontal = 24.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+      ) {
+        Text("Total", fontWeight = FontWeight.Bold)
+        Text("$${String.format("%.2f", total)}", fontWeight = FontWeight.Bold)
+      }
 
       Column(
         modifier = Modifier
@@ -124,7 +137,7 @@ private fun ItemPreview(
           .padding(bottom = 16.dp)
           .navigationBarsPadding()
       ) {
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
         Button(
           onClick = onGoToCart,

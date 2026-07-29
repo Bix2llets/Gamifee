@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -174,6 +175,8 @@ fun ProductDetailScreen(navController: NavHostController, coffee: CoffeeItem) {
         modifier = Modifier.weight(1f)
       )
     }
+
+    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
     ProductPriceAndCart(
       totalPrice = coffeePrice * countSelectAmount,

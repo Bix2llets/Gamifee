@@ -28,6 +28,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -240,6 +241,10 @@ fun ExpandableCartItemList(
           }
         }
 
+        val totalCost = items.fold(-discountDollars) { total, value ->
+          total + value.option.cost * value.quantity
+        }
+
         if (discountDollars > 0) {
           Spacer(modifier = Modifier.height(4.dp))
           Row(
@@ -251,12 +256,25 @@ fun ExpandableCartItemList(
             Text("Discount")
             Text(
               "-$${String.format("%.2f", discountDollars)}",
-              fontWeight = FontWeight.SemiBold
+              fontWeight = FontWeight.SemiBold,
+              color = Color(0xFF4CAF50)
             )
           }
         }
 
-        Spacer(modifier = Modifier.height(4.dp))
+        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+        Row(
+          modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+          horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+          Text("Total", fontWeight = FontWeight.Bold)
+          Text(
+            "$${String.format("%.2f", totalCost)}",
+            fontWeight = FontWeight.Bold
+          )
+        }
       }
     }
   }
@@ -313,7 +331,7 @@ private fun OrderCardPreview() {
     id = 1,
     address = "123 Main St, City",
     orderList = mockCartItems,
-    orderTime = ZonedDateTime.now(),
+    orderTime = ZonedDateTime.now(java.time.ZoneOffset.ofHours(7)),
     discountDollars = 0.0
   )
   OrderCard(order = mockOrder)

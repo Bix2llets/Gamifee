@@ -24,6 +24,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -194,7 +195,7 @@ fun CartScreen(navController: NavController) {
       }
     }
 
-    Spacer(modifier = Modifier.height(8.dp))
+    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
     Row(
       modifier = Modifier.fillMaxWidth(),
@@ -247,7 +248,7 @@ fun CartScreen(navController: NavController) {
               val discountAmount = discount?.discountDollars ?: 0.0
               val orderEntity = OrderItem(
                 id = newId, address = address, orderList = chosenItems,
-                orderTime = ZonedDateTime.now(), discountDollars = discountAmount
+                orderTime = ZonedDateTime.now(java.time.ZoneOffset.ofHours(7)), discountDollars = discountAmount
               )
               val orderEntityDb = orderEntity.toEntity()
               val orderItemEntities = chosenItems.mapIndexed { idx, ci ->
@@ -393,6 +394,8 @@ private fun CheckoutPanel(
         Spacer(modifier = Modifier.height(16.dp))
         CheckoutItemDisplay(chosenItems)
 
+        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
         Column(
           modifier = Modifier
             .fillMaxWidth(),
@@ -412,14 +415,14 @@ private fun CheckoutPanel(
               Text("Discount")
 
               Text(
-                "-$${String.format("%.2f", discountInfo.discountDollars)}",
-                color = Color(0xFF4CAF50),
-                fontWeight = FontWeight.SemiBold
-              )
-            }
-            Spacer(modifier = Modifier.height(8.dp))
+              "-$${String.format("%.2f", discountInfo.discountDollars)}",
+              color = Color(0xFF4CAF50),
+              fontWeight = FontWeight.SemiBold
+            )
           }
-          Row(
+          HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+        }
+        Row(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()

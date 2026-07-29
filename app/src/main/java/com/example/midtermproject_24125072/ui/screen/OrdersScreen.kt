@@ -64,8 +64,8 @@ fun OrdersScreen(navHostController: NavHostController) {
 
   val isLandscape = LocalIsLandscape.current
 
-  val ongoingOrders = orderList.reversed().filter { !it.isCompleted }
-  val historyOrders = orderList.reversed().filter { it.isCompleted }
+  val ongoingOrders = orderList.filter { !it.isCompleted }
+  val historyOrders = orderList.filter { it.isCompleted }
 
   Column(
     modifier = Modifier

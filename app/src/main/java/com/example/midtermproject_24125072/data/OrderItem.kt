@@ -40,7 +40,7 @@ data class OrderItem(
       id = id,
       address = address,
       orderList = orderList,
-      orderTime = ZonedDateTime.now(),
+      orderTime = ZonedDateTime.now(java.time.ZoneOffset.ofHours(7)),
       discountDollars = discountDollars
     )
 
@@ -91,7 +91,7 @@ fun com.example.midtermproject_24125072.data.local.OrderItemEntity.toDomain(
   OrderItem(
     id = id, address = address,
     orderTime = ZonedDateTime.ofInstant(
-      java.time.Instant.ofEpochMilli(orderTime), java.time.ZoneOffset.UTC
+      java.time.Instant.ofEpochMilli(orderTime), java.time.ZoneOffset.ofHours(7)
     ),
     isCompleted = isCompleted, discountDollars = discountDollars,
     orderList = cartItems.map { it.toCartItem() }
